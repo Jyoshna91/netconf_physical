@@ -1,11 +1,7 @@
-<nc:rpc message-id="18" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:ifm="http://www.cisco.com/nxos:1.0:if_manager">
+<nc:rpc message-id="37" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
   <nc:get>
     <nc:filter type="subtree">
-      <ifm:interfaces>
-        <ifm:interface>
-          <ifm:name>Ethernet1/16</ifm:name>
-        </ifm:interface>
-      </ifm:interfaces>
+      <routing xmlns="http://www.cisco.com/nxos:1.0:routing_mgr"/>
     </nc:filter>
   </nc:get>
 </nc:rpc>
