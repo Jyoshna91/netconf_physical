@@ -1,31 +1,27 @@
-from ncclient import manager
-from lxml import etree
+from ncclient import manager, xml_
 
-# Device details
-host = 'your-device-ip'
-port = 830
-username = 'your-username'
-password = 'your-password'
+# Define connection parameters
+host = "10.133.35.148"
+username = "admin"
+password = "tcs123"
 
-# Corrected NETCONF RPC to execute the command
-rpc = """
-<?xml version="1.0"?> 
-<nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" 
-xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="110"> 
-  <nxos:exec-command> 
-    <nxos:cmd>show interface brief</nxos:cmd> 
-  </nxos:exec-command> 
+# Define the XML filter with the configuration commands to be executed
+xml_filter = """
+<nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+        xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="110">
+  <nxos:exec-command>
+    <nxos:cmd>conf t ; interface ethernet 1/5 ; no switchport ; ip address 10.10.10.1/24 ; no shutdown</nxos:cmd>
+  </nxos:exec-command>
 </nf:rpc>
 """
 
-def execute_command():
-    with manager.connect(host=host, port=port, username=username, password=password, hostkey_verify=False) as m:
-        # Parse the string into an XML element
-        rpc_element = etree.fromstring(rpc)
-        # Dispatch the RPC and get the response
-        response = m.dispatch(rpc_element)
-        # Print the response
-        print(response.xml)
+# Establish NETCONF connection and execute the command
+with manager.connect(host=host, port=830, username=username, password=password, hostkey_verify=False) as m:
+    print("NETCONF Connected")
 
-if __name__ == "__main__":
-    execute_command()
+    # Send the RPC request with the xml_filter
+    res = m.dispatch(xml_.to_ele(xml_filter))
+
+    # Print the response
+    print("Response:")
+    print(res.xml)
