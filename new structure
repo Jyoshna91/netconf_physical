@@ -1,7 +1,7 @@
 <nc:rpc message-id="37" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
   <nc:get>
-    <nc:filter type="subtree">
-      <routing xmlns="http://www.cisco.com/nxos:1.0:routing_mgr"/>
+    <nc:filter xmlns="http://www.cisco.com/nxos:1.0:routing_mgr">
+      <routing/>
     </nc:filter>
   </nc:get>
 </nc:rpc>
