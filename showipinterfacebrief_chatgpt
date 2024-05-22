@@ -8,7 +8,9 @@ password = "tcs123"
 
 # Define the XML filter with the configuration commands to be executed
 xml_filter = """
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="110">
+<rpc message-id="110"
+     xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+     xmlns:nxos="http://www.cisco.com/nxos:1.0">
   <exec-command xmlns="http://www.cisco.com/nxos:1.0">
     <cmd>conf t ; interface ethernet 1/5 ; no switchport ; ip address 10.10.10.1/24 ; no shutdown</cmd>
   </exec-command>
@@ -19,8 +21,10 @@ def execute_command():
     with manager.connect(host=host, port=830, username=username, password=password, hostkey_verify=False) as m:
         print("NETCONF Connected")
 
-        # Send the RPC request with the xml_filter
+        # Convert the XML string to an element
         rpc = to_ele(xml_filter)
+        
+        # Send the RPC request
         try:
             res = m.dispatch(rpc)
             # Print the response
