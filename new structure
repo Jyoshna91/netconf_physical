@@ -1,24 +1,27 @@
-<nc:rpc message-id="17" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns="http://www.cisco.com/nxos:1.0:if_manager"> 
+from ncclient import manager
 
-  <nc:get-config> 
+# Device details
+host = 'your-device-ip'
+port = 830
+username = 'your-username'
+password = 'your-password'
 
-    <nc:source> 
+# Corrected NETCONF RPC to execute the command
+rpc = """
+<?xml version="1.0"?>
+<nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+        xmlns:nxos="http://www.cisco.com/nxos:1.0"
+        message-id="110">
+  <nxos:exec-command>
+    <nxos:cmd>show interface brief</nxos:cmd>
+  </nxos:exec-command>
+</nf:rpc>
+"""
 
-      <nc:running/> 
+def execute_command():
+    with manager.connect(host=host, port=port, username=username, password=password, hostkey_verify=False) as m:
+        response = m.dispatch(rpc)
+        print(response.xml)
 
-    </nc:source> 
-
-  </nc:get-config> 
-
-</nc:rpc> 
-
-]]>]]> 
-
-<nc:rpc message-id="37" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns="http://www.cisco.com/nxos:1.0:routing_mgr">
-  <nc:get>
-    <nc:filter> 
-      <nc:routing/>
-    </nc:filter>
-  </nc:get>
-</nc:rpc>
-]]>]]>
+if __name__ == "__main__":
+    execute_command()
