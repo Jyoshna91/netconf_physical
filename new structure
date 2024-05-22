@@ -1,7 +1,24 @@
-<nc:rpc message-id="37" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+<nc:rpc message-id="17" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns="http://www.cisco.com/nxos:1.0:if_manager"> 
+
+  <nc:get-config> 
+
+    <nc:source> 
+
+      <nc:running/> 
+
+    </nc:source> 
+
+  </nc:get-config> 
+
+</nc:rpc> 
+
+]]>]]> 
+
+<nc:rpc message-id="37" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns="http://www.cisco.com/nxos:1.0:routing_mgr">
   <nc:get>
-    <nc:filter xmlns="http://www.cisco.com/nxos:1.0:routing_mgr">
-      <routing/>
+    <nc:filter> 
+      <nc:routing/>
     </nc:filter>
   </nc:get>
 </nc:rpc>
+]]>]]>
