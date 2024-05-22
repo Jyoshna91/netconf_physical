@@ -1,0 +1,25 @@
+from ncclient import manager,xml_
+
+# Define connection parameters
+host = "10.133.35.148"
+username = "admin"
+password = "tcs123"
+
+# Define the XML filter with the command to be executed
+xml_filter = """
+<cli xmlns="http://cisco.com/ns/yang/cisco-nx-os-device">
+    <mode>EXEC</mode>
+    <cmdline>show ip interface brief</cmdline>
+</cli>
+"""
+
+# Establish NETCONF connection and execute the command
+with manager.connect(host=host, port=830, username=username, password=password, hostkey_verify=False) as m:
+    print("NETCONF Connected")
+
+    # Send the RPC request with the xml_filter
+    res = m.rpc(xml_.to_ele(xml_filter))
+
+    # Print the response
+    print("Response:")
+    print(res)
