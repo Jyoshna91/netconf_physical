@@ -1,1 +1,31 @@
-xyz
+from ncclient import manager
+from lxml import etree
+
+# Device details
+host = 'your-device-ip'
+port = 830
+username = 'your-username'
+password = 'your-password'
+
+# Corrected NETCONF RPC to execute the command
+rpc = """
+<?xml version="1.0"?> 
+<nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" 
+xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="110"> 
+  <nxos:exec-command> 
+    <nxos:cmd>show interface brief</nxos:cmd> 
+  </nxos:exec-command> 
+</nf:rpc>
+"""
+
+def execute_command():
+    with manager.connect(host=host, port=port, username=username, password=password, hostkey_verify=False) as m:
+        # Parse the string into an XML element
+        rpc_element = etree.fromstring(rpc)
+        # Dispatch the RPC and get the response
+        response = m.dispatch(rpc_element)
+        # Print the response
+        print(response.xml)
+
+if __name__ == "__main__":
+    execute_command()
