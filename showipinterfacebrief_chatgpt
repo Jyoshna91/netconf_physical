@@ -1,4 +1,5 @@
-from ncclient import manager, xml_
+from ncclient import manager
+from ncclient.xml_ import to_ele
 
 # Define connection parameters
 host = "10.133.35.148"
@@ -15,13 +16,19 @@ xml_filter = """
 </nf:rpc>
 """
 
-# Establish NETCONF connection and execute the command
-with manager.connect(host=host, port=830, username=username, password=password, hostkey_verify=False) as m:
-    print("NETCONF Connected")
+def execute_command():
+    with manager.connect(host=host, port=830, username=username, password=password, hostkey_verify=False) as m:
+        print("NETCONF Connected")
 
-    # Send the RPC request with the xml_filter
-    res = m.dispatch(xml_.to_ele(xml_filter))
+        # Send the RPC request with the xml_filter
+        rpc = to_ele(xml_filter)
+        try:
+            res = m.dispatch(rpc)
+            # Print the response
+            print("Response:")
+            print(res.xml)
+        except Exception as e:
+            print(f"Error: {e}")
 
-    # Print the response
-    print("Response:")
-    print(res.xml)
+if __name__ == "__main__":
+    execute_command()
