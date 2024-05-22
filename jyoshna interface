@@ -33,3 +33,7 @@ xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="110">
   <nf:ok/>
 </nf:rpc-reply>
 ]]>]]>
+
+
+
+https://xrdocs.io/programmability/tutorials/pytas-series-netconf-module/
