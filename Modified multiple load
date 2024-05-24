@@ -1,0 +1,93 @@
+import logging
+from ncclient import manager, xml_
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def establish_netconf_session(host, port, username, password):
+    try:
+        session = manager.connect(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            hostkey_verify=False
+        )
+        print("NETCONF session established successfully!")
+        return session
+    except Exception as e:
+        print(f"Failed to establish NETCONF session: {e}")
+        return None
+
+def load_yang_modules(session):
+    try:
+        yang_modules = ["ietf-netconf-acm.yang", "ietf-netconf-monitoring.yang"]  # Add your YANG file names here
+        for module in yang_modules:
+            with open(module, 'r') as file:
+                module_data = file.read()
+            load_module_rpc = f"""
+            <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+                <edit-config>
+                    <target>
+                        <running/>
+                    </target>
+                    <config>
+                        {module_data}
+                    </config>
+                </edit-config>
+            </rpc>
+            """
+            response = session.dispatch(xml_.to_ele(load_module_rpc))
+            print(f"Loaded YANG module: {module}")
+            print(response.xml)
+    except Exception as e:
+        print(f"Failed to load YANG modules: {e}")
+
+def get_running_config(session):
+    try:
+        hello_response = """<?xml version="1.0" encoding="UTF-8"?>
+            <hello xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+               <capabilities>
+                 <capability>urn:ietf:params:netconf:base:1.0</capability>
+               </capabilities>
+            </hello>
+        """
+        response = session.dispatch(xml_.to_ele(hello_response))
+        print("Running:")
+        print(response.xml)
+    except Exception as e:
+        print(f"Failed to get running configuration: {e}")
+
+def get_interface_status(session):
+    try:
+        rpc_command_interface_brief = """<?xml version="1.0"?>
+           <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="110">
+             <nxos:exec-command>
+               <nxos:cmd>show ip interface brief</nxos:cmd>
+             </nxos:exec-command>
+           </nf:rpc>]]>]]>
+        """
+        response_interface_status = session.dispatch(xml_.to_ele(rpc_command_interface_brief))
+        print("Interface Status:")
+        print(response_interface_status.xml)
+    except Exception as e:
+        print(f"Failed to get interface status: {e}")
+
+def main():
+    router = {
+        "host": "10.133.35.148",
+        "port": 830,
+        "username": "admin",
+        "password": "tcs123",
+    }
+
+    session = establish_netconf_session(**router)
+    if session:
+        load_yang_modules(session)  # Load YANG modules before executing other operations
+        get_running_config(session)
+        get_interface_status(session)
+        session.close_session()
+
+if __name__ == "__main__":
+    main()
