@@ -6,16 +6,15 @@ host = "10.133.35.148"
 username = "admin"
 password = "tcs123"
 
-# Define the XML filter with the configuration commands to be executed
+# Define the XML configuration to be executed
 xml_filter = """
-<nc:rpc message-id="16" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
-  xmlns="http://www.cisco.com/nxos:1.0:if_manager">
-  <nc:edit-config>
-    <nc:target>
-      <nc:running/>
-    </nc:target>
-    <nc:config>
-      <configure>
+<rpc message-id="16">
+  <edit-config>
+    <target>
+      <running/>
+    </target>
+    <config>
+      <configure xmlns="http://www.cisco.com/nxos:1.0">
         <__XML__MODE__exec_configure>
           <interface>
             <ethernet>
@@ -31,9 +30,9 @@ xml_filter = """
           </interface>
         </__XML__MODE__exec_configure>
       </configure>
-    </nc:config>
-  </nc:edit-config>
-</nc:rpc>
+    </config>
+  </edit-config>
+</rpc>
 """
 
 def execute_command():
