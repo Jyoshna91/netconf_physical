@@ -25,3 +25,61 @@
     </nc:config>
   </nc:edit-config>
 </nc:rpc>
+
+
+
+
+code:-
+from ncclient import manager
+
+# Define connection parameters
+host = "10.133.35.148"
+port = 830
+username = "admin"
+password = "tcs123"
+
+# Define the XML filter with the configuration commands to be executed
+xml_filter = """
+<nc:rpc message-id="16" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+  xmlns="http://www.cisco.com/nxos:1.0:if_manager">
+  <nc:edit-config>
+    <nc:target>
+      <nc:running/>
+    </nc:target>
+    <nc:config>
+      <configure>
+        <__XML__MODE__exec_configure>
+          <interface>
+            <ethernet>
+              <interface>1/13</interface>
+              <__XML__MODE_if-ethernet>
+                <__XML__MODE_if-eth-base>
+                  <description>
+                    <desc_line>Marketing Network</desc_line>
+                  </description>
+                </__XML__MODE_if-eth-base>
+              </__XML__MODE_if-ethernet>
+            </ethernet>
+          </interface>
+        </__XML__MODE__exec_configure>
+      </configure>
+    </nc:config>
+  </nc:edit-config>
+</nc:rpc>
+"""
+
+def execute_command():
+    with manager.connect(host=host, port=port, username=username, password=password, hostkey_verify=False) as m:
+        print("NETCONF Connected")
+
+        # Send the RPC request
+        try:
+            res = m.dispatch(to_ele(xml_filter))
+            # Print the response
+            print("Response:")
+            print(res.xml)
+        except Exception as e:
+            print(f"Error: {e}")
+
+if __name__ == "__main__":
+    execute_command()
