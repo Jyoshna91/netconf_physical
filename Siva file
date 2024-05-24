@@ -1,0 +1,57 @@
+from pyats import aetest
+from ncclient import manager
+from lxml import etree
+
+class NetconfTest(aetest.Testcase):
+
+    @aetest.setup
+    def setup(self):
+        self.router_ip = "10.133.35.148"
+        self.username = "admin"
+        self.password = "tcs123"
+        self.port = 830
+
+    @aetest.test
+    def test_netconf_connection(self):
+        hello_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <hello xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+          <capabilities>
+            <capability>urn:ietf:params:netconf:base:1.0</capability>
+          </capabilities>
+        </hello>]]>]]>"""
+
+        try:
+            with manager.connect(host=self.router_ip,
+                                 port=self.port,
+                                 username=self.username,
+                                 password=self.password,
+                                 hostkey_verify=False) as m:
+                m.send(etree.fromstring(hello_xml))
+            self.passed("Successfully established NETCONF connection to the router.")
+        except Exception as e:
+            self.failed(f"Failed to establish NETCONF connection: {e}")
+
+    @aetest.test
+    def test_execute_command(self):
+        rpc_xml = """<?xml version="1.0"?>
+        <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+                xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="110">
+          <nxos:exec-command>
+            <nxos:cmd>show ip interface brief</nxos:cmd>
+          </nxos:exec-command>
+        </nf:rpc>]]>]]>"""
+
+        try:
+            with manager.connect(host=self.router_ip,
+                                 port=self.port,
+                                 username=self.username,
+                                 password=self.password,
+                                 hostkey_verify=False) as m:
+                response = m.dispatch(etree.fromstring(rpc_xml))
+                # Further validation and processing of response can be done here
+            self.passed("Successfully executed command via NETCONF.")
+        except Exception as e:
+            self.failed(f"Failed to execute command via NETCONF: {e}")
+
+if __name__ == "__main__":
+    aetest.main()
