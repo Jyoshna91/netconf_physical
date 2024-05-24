@@ -8,18 +8,24 @@ password = "tcs123"
 
 # Define the XML filter with the configuration commands to be executed
 xml_filter = """
-<rpc message-id="110"
-     xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
-     xmlns:nxos="http://www.cisco.com/nxos:1.0">
-  <exec-command xmlns="http://www.cisco.com/nxos:1.0">
-    <cmd>conf t ; interface ethernet 1/5 ; no switchport ; ip address 10.10.10.1/24 ; no shutdown</cmd>
-  </exec-command>
+<rpc message-id="110" xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <cli-config-data>
+    <cmd>conf t</cmd>
+    <cmd>interface ethernet 1/5</cmd>
+    <cmd>no switchport</cmd>
+    <cmd>ip address 10.10.10.1/24</cmd>
+    <cmd>no shutdown</cmd>
+  </cli-config-data>
 </rpc>
 """
 
 def execute_command():
     with manager.connect(host=host, port=830, username=username, password=password, hostkey_verify=False) as m:
         print("NETCONF Connected")
+
+        # Check device capabilities to verify namespaces
+        for capability in m.server_capabilities:
+            print(capability)
 
         # Convert the XML string to an element
         rpc = to_ele(xml_filter)
@@ -31,7 +37,7 @@ def execute_command():
             print("Response:")
             print(res.xml)
         except Exception as e:
-            print(f"Error: {e}")
+            print("Error: {}".format(e))
 
 if __name__ == "__main__":
     execute_command()
