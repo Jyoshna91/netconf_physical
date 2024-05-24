@@ -6,42 +6,34 @@ host = "10.133.35.148"
 username = "admin"
 password = "tcs123"
 
-# Define the XML configuration to be executed
+# Define the XML filter with the configuration commands to be executed
 xml_filter = """
-<rpc message-id="16" xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <edit-config>
-    <target>
-      <running/>
-    </target>
-    <config>
-      <configure xmlns="http://www.cisco.com/nxos:1.0:if_manager">
+<nc:rpc message-id="16" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+  xmlns="http://www.cisco.com/nxos:1.0:if_manager">
+  <nc:edit-config>
+    <nc:target>
+      <nc:running/>
+    </nc:target>
+    <nc:config>
+      <configure>
         <__XML__MODE__exec_configure>
           <interface>
             <ethernet>
-              <interface>1/5</interface>
+              <interface>1/13</interface>
               <__XML__MODE_if-ethernet>
                 <__XML__MODE_if-eth-base>
                   <description>
-                    <desc_line>Configured via NETCONF</desc_line>
+                    <desc_line>Marketing Network</desc_line>
                   </description>
-                  <ip>
-                    <address>
-                      <primary>
-                        <address>10.10.10.1</address>
-                        <mask>255.255.255.0</mask>
-                      </primary>
-                    </address>
-                  </ip>
-                  <shutdown operation="delete"/>
                 </__XML__MODE_if-eth-base>
               </__XML__MODE_if-ethernet>
             </ethernet>
           </interface>
         </__XML__MODE__exec_configure>
       </configure>
-    </config>
-  </edit-config>
-</rpc>
+    </nc:config>
+  </nc:edit-config>
+</nc:rpc>
 """
 
 def execute_command():
@@ -50,7 +42,7 @@ def execute_command():
 
         # Convert the XML string to an element
         rpc = to_ele(xml_filter)
-        
+
         # Send the RPC request
         try:
             res = m.dispatch(rpc)
@@ -58,7 +50,7 @@ def execute_command():
             print("Response:")
             print(res.xml)
         except Exception as e:
-            print(f"Error: {e}")
+            print("Error: {}".format(e))
 
 if __name__ == "__main__":
     execute_command()
