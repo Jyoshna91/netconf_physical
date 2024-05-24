@@ -9,7 +9,7 @@ password = "tcs123"
 # Define the XML filter with the configuration commands to be executed
 xml_filter = """
 <nc:rpc message-id="16"
-  #xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+  xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
   xmlns="http://openconfig.net/yang/interfaces">
   <nc:edit-config>
     <nc:target>
