@@ -23,6 +23,24 @@ device.connect(alias='nc', via='netconf')
 if device.nc.connected:
     print("NETCONF Connected")
 
+
+
+<config>
+                    <native xmlns="http://cisco.com/ns/yang/cisco-nx-os-native">
+                        <router>
+                            <ospf xmlns="http://openconfig.net/yang/ospf-deviations">
+                                <id>100</id>
+                                <router-id>1.1.1.1</router-id>
+                                <network>
+                                    <ip>10.1.1.0</ip>
+                                    <mask>0.0.0.3</mask>
+                                    <area>0</area>
+                                </network>
+                            </ospf>
+                        </router>
+                    </native>
+                </config>
+
     # Define the NETCONF request
     netconf_request = """
 
