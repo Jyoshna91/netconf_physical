@@ -6,7 +6,7 @@ device_params = {
     'connections': {
         'netconf': {
             'class': 'yang.connector.Netconf',
-            'ip': '10.133.35.148',  # Replace with the actual IP address of your device
+            'ip': '10.133.35.148', 
             'port': 22,  # NETCONF port
             'username': 'admin',  # NETCONF username
             'password': 'tcs123',  # NETCONF password
