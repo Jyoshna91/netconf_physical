@@ -23,3 +23,41 @@ xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="110">
         <nxos:cmd>conf t ; ip access-list user-acl-ssh ; permit tcp any any eq 22 ; permit tcp any eq 22 any</nxos:cmd>
     </nxos:exec-command>
 </nf:rpc>]]>]]>
+
+
+
+from pyats.topology import loader
+from genie.testbed import load
+from pyats import aetest
+import re, logging
+
+# Load the testbed YAML file
+testbed = loader.load("testbed.yaml")
+
+# Access the device using the new name 'n9k1'
+device = testbed.devices['n9k1']
+
+# Connect to the device via netconf
+device.connect(alias='nc', via='netconf')
+
+print(device.nc.connected)
+
+
+command_request = """
+<?xml version="1.0" encoding="UTF-8"?>
+<nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+    <nxos:exec-command>
+        <nxos:cmd>conf t ; ip access-list user-acl-ssh ; permit tcp any any eq 22 ; permit tcp any eq 22 any</nxos:cmd>
+    </nxos:exec-command>
+</nf:rpc>
+"""
+
+# Send the command execution request
+reply_command = device.nc.request(command_request)
+#print(reply_command)
+
+# Disconnect from the device
+device.nc.disconnect()
+
+# Check if the connection is closed
+print(device.nc.connected)
