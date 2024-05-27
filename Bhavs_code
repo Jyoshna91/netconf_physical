@@ -1,3 +1,32 @@
+devices:
+    asr22:
+        type: 'ASR'
+        tacacs:
+            login_prompt: "login:"
+            password_prompt: "Password:"
+            username: "admin"
+        passwords:
+            tacacs: admin
+            enable: admin
+            line: admin
+        connections:
+            a:
+                protocol: telnet
+                ip: "1.2.3.4"
+                port: 2004
+            vty:
+                protocol : telnet
+                ip : "2.3.4.5"
+            netconf:
+                class: yang.connector.Netconf
+                ip : "2.3.4.5"
+                port: 830
+                username: admin
+                password: admin
+
+
+
+
 from pyats.topology import loader
 testbed = loader.load('/users/xxx/xxx/asr22.yaml')
 device = testbed.devices['asr22']
