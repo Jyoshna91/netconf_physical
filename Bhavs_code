@@ -1,4 +1,5 @@
 import paramiko
+import time
 
 # Define connection parameters
 host = "2.3.4.5"
@@ -15,10 +16,9 @@ command_request = """
   <nxos:exec-command>
     <nxos:cmd>show ip interface brief</nxos:cmd>
   </nxos:exec-command>
-</rpc>
+</rpc>]]>]]>
 """
 
-# Function to connect and execute command
 def execute_command():
     # Create an SSH client
     ssh_client = paramiko.SSHClient()
@@ -39,12 +39,12 @@ def execute_command():
         print("Command Sent")
 
         # Receive and print the response
-        while True:
-            if netconf_channel.recv_ready():
-                response = netconf_channel.recv(4096).decode('utf-8')
-                print("Response:")
-                print(response)
-                break
+        time.sleep(1)  # Wait for the response
+        while netconf_channel.recv_ready():
+            response = netconf_channel.recv(4096).decode('utf-8')
+            print("Response:")
+            print(response)
+            break
 
     except Exception as e:
         print(f"Error: {e}")
