@@ -21,7 +21,7 @@ device_details = {
 def execute_netconf_command(device_details, netconf_request):
     try:
         # Initialize the Netconf session
-        device = Netconf(**device_details)
+        device = Netconf(**device_details, drive="async")
         print("NETCONF Connected")
 
         # Send the NETCONF request and get the response
