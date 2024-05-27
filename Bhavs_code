@@ -1,6 +1,4 @@
-from ncclient import manager
-from ncclient.xml_ import to_ele
-from yang.connector import Netconf
+import paramiko
 
 # Define connection parameters
 host = "2.3.4.5"
@@ -10,38 +8,51 @@ password = "admin"
 
 # Define the XML command request
 command_request = """
-<?xml version="1.0"?>
-<nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
-        xmlns:nxos="http://www.cisco.com/nxos:1.0"
-        message-id="110">
+<?xml version="1.0" encoding="UTF-8"?>
+<rpc message-id="110"
+     xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+     xmlns:nxos="http://www.cisco.com/nxos:1.0">
   <nxos:exec-command>
     <nxos:cmd>show ip interface brief</nxos:cmd>
   </nxos:exec-command>
-</nf:rpc>
+</rpc>
 """
 
+# Function to connect and execute command
 def execute_command():
-    with manager.connect(host=host, port=port, username=username, password=password, hostkey_verify=False) as m:
-        print("NETCONF Connected")
+    # Create an SSH client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Connect to the device
+        ssh_client.connect(hostname=host, port=port, username=username, password=password, look_for_keys=False, allow_agent=False)
+        print("SSH Connected")
 
-        # Initialize the Netconf session with yang.connector.netconf
-        device = Netconf(m)
+        # Open a NETCONF session
+        netconf_channel = ssh_client.get_transport().open_session()
+        netconf_channel.set_name("netconf")
+        netconf_channel.invoke_subsystem("netconf")
 
-        # Convert the command request to an XML element
-        command_rpc = to_ele(command_request)
+        # Send the XML command request
+        netconf_channel.send(command_request)
+        print("Command Sent")
 
-        # Send the RPC request
-        try:
-            reply_command = device.request(command_request)
-            # Print the response
-            print("Response:")
-            print(reply_command)
-        except Exception as e:
-            print("Error: {}".format(e))
-        finally:
-            # Disconnect from the device
-            device.disconnect()
-            print("NETCONF Disconnected")
+        # Receive and print the response
+        while True:
+            if netconf_channel.recv_ready():
+                response = netconf_channel.recv(4096).decode('utf-8')
+                print("Response:")
+                print(response)
+                break
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        # Close the NETCONF session and SSH connection
+        netconf_channel.close()
+        ssh_client.close()
+        print("SSH Disconnected")
 
 if __name__ == "__main__":
     execute_command()
