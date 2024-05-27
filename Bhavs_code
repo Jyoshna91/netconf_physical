@@ -1,58 +1,41 @@
-import paramiko
-import time
+from yang.connector import Netconf
 
-# Define connection parameters
-host = "2.3.4.5"
-port = 830
-username = "admin"
-password = "admin"
-
-# Define the XML command request
-command_request = """
-<?xml version="1.0" encoding="UTF-8"?>
-<rpc message-id="110"
-     xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
-     xmlns:nxos="http://www.cisco.com/nxos:1.0">
-  <nxos:exec-command>
-    <nxos:cmd>show ip interface brief</nxos:cmd>
-  </nxos:exec-command>
-</rpc>]]>]]>
+# Define the NETCONF XML request for "show ip interface brief"
+netconf_request = """
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="101">
+  <exec-command xmlns="http://www.cisco.com/nxos:1.0">
+    <cmd>show ip interface brief</cmd>
+  </exec-command>
+</rpc>
 """
 
-def execute_command():
-    # Create an SSH client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    
+# Define the device details from the testbed file
+device_details = {
+    "class": "yang.connector.Netconf",
+    "ip": "2.3.4.5",  # Replace with the actual IP address of the device
+    "port": 830,  # NETCONF port
+    "username": "admin",  # NETCONF username
+    "password": "admin",  # NETCONF password
+}
+
+def execute_netconf_command(device_details, netconf_request):
     try:
-        # Connect to the device
-        ssh_client.connect(hostname=host, port=port, username=username, password=password, look_for_keys=False, allow_agent=False)
-        print("SSH Connected")
+        # Initialize the Netconf session
+        device = Netconf(**device_details)
+        print("NETCONF Connected")
 
-        # Open a NETCONF session
-        netconf_channel = ssh_client.get_transport().open_session()
-        netconf_channel.set_name("netconf")
-        netconf_channel.invoke_subsystem("netconf")
-
-        # Send the XML command request
-        netconf_channel.send(command_request)
-        print("Command Sent")
-
-        # Receive and print the response
-        time.sleep(1)  # Wait for the response
-        while netconf_channel.recv_ready():
-            response = netconf_channel.recv(4096).decode('utf-8')
-            print("Response:")
-            print(response)
-            break
+        # Send the NETCONF request and get the response
+        response = device.request(netconf_request)
+        print("Response:")
+        print(response)
 
     except Exception as e:
         print(f"Error: {e}")
+
     finally:
-        # Close the NETCONF session and SSH connection
-        netconf_channel.close()
-        ssh_client.close()
-        print("SSH Disconnected")
+        # Disconnect from the device
+        device.disconnect()
+        print("NETCONF Disconnected")
 
 if __name__ == "__main__":
-    execute_command()
+    execute_netconf_command(device_details, netconf_request)
