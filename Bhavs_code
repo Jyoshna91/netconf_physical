@@ -1,50 +1,47 @@
-devices:
-    asr22:
-        type: 'ASR'
-        tacacs:
-            login_prompt: "login:"
-            password_prompt: "Password:"
-            username: "admin"
-        passwords:
-            tacacs: admin
-            enable: admin
-            line: admin
-        connections:
-            a:
-                protocol: telnet
-                ip: "1.2.3.4"
-                port: 2004
-            vty:
-                protocol : telnet
-                ip : "2.3.4.5"
-            netconf:
-                class: yang.connector.Netconf
-                ip : "2.3.4.5"
-                port: 830
-                username: admin
-                password: admin
+from ncclient import manager
+from ncclient.xml_ import to_ele
+from yang.connector import Netconf
 
+# Define connection parameters
+host = "2.3.4.5"
+port = 830
+username = "admin"
+password = "admin"
 
+# Define the XML command request
+command_request = """
+<?xml version="1.0"?>
+<nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+        xmlns:nxos="http://www.cisco.com/nxos:1.0"
+        message-id="110">
+  <nxos:exec-command>
+    <nxos:cmd>show ip interface brief</nxos:cmd>
+  </nxos:exec-command>
+</nf:rpc>
+"""
 
+def execute_command():
+    with manager.connect(host=host, port=port, username=username, password=password, hostkey_verify=False) as m:
+        print("NETCONF Connected")
 
-from pyats.topology import loader
-testbed = loader.load('/users/xxx/xxx/asr22.yaml')
-device = testbed.devices['asr22']
-device.connect(alias='nc', via='netconf')
-device.nc.connected
-True
-netconf_request = """
-    <rpc message-id="101"
-     xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-    <get>
-    <filter>
-    <native xmlns="http://cisco.com/ns/yang/ned/ios">
-    <version>
-    </version>
-    </native>
-    </filter>
-    </get>
-    </rpc>
-    """
-reply = device.nc.request(netconf_request)
-print(reply)
+        # Initialize the Netconf session with yang.connector.netconf
+        device = Netconf(m)
+
+        # Convert the command request to an XML element
+        command_rpc = to_ele(command_request)
+
+        # Send the RPC request
+        try:
+            reply_command = device.request(command_request)
+            # Print the response
+            print("Response:")
+            print(reply_command)
+        except Exception as e:
+            print("Error: {}".format(e))
+        finally:
+            # Disconnect from the device
+            device.disconnect()
+            print("NETCONF Disconnected")
+
+if __name__ == "__main__":
+    execute_command()
