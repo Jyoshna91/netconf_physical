@@ -23,15 +23,15 @@ def execute_command():
     with manager.connect(host=host, port=830, username=username, password=password, hostkey_verify=False) as m:
         print("NETCONF Connected")
 
-        # Initialize the Netconf session with yang.connector.Netconf
-        device = Netconf(m)
+        # Initialize the Netconf session with yang.connector.netconf
+        device = Netconf(host=host, port=830, username=username, password=password, protocol='ssh')
 
         # Convert the command request to an XML element
         command_rpc = to_ele(command_request)
 
         # Send the RPC request
         try:
-            reply_command = device.request(command_rpc)
+            reply_command = device.request(command_request)
             # Print the response
             print("Response:")
             print(reply_command)
@@ -39,7 +39,7 @@ def execute_command():
             print("Error: {}".format(e))
         finally:
             # Disconnect from the device
-            device.close()
+            device.disconnect()
             print("NETCONF Disconnected")
 
 if __name__ == "__main__":
