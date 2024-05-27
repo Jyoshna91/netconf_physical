@@ -1,0 +1,42 @@
+from ncclient import manager
+from ncclient.xml_ import to_ele
+
+# Define connection parameters
+host = "10.133.35.148"
+username = "admin"
+password = "tcs123"
+
+# Define the XML command request
+command_request = """
+<?xml version="1.0"?>
+<nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+        xmlns:nxos="http://www.cisco.com/nxos:1.0"
+        message-id="110">
+  <nxos:exec-command>
+    <nxos:cmd>show ip interface brief</nxos:cmd>
+  </nxos:exec-command>
+</nf:rpc>
+"""
+
+def execute_command():
+    with manager.connect(host=host, port=830, username=username, password=password, hostkey_verify=False) as device:
+        print("NETCONF Connected")
+
+        # Convert the command request to an XML element
+        command_rpc = to_ele(command_request)
+
+        # Send the RPC request
+        try:
+            reply_command = device.dispatch(command_rpc)
+            # Print the response
+            print("Response:")
+            print(reply_command.xml)
+        except Exception as e:
+            print("Error: {}".format(e))
+        finally:
+            # Disconnect from the device
+            device.close_session()
+            print("NETCONF Disconnected")
+
+if __name__ == "__main__":
+    execute_command()
