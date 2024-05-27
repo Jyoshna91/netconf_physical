@@ -131,3 +131,82 @@ device.nc.disconnect()
 
 # Check if the connection is closed
 print("NETCONF connected after disconnect:", device.nc.connected)
+
+
+
+
+
+
+
+
+
+output:
+------
+
+2024-05-27T16:54:16: %NETCONF-INFO: NETCONF CONNECTED
+NETCONF connected: True
+2024-05-27T16:54:16: %NETCONF-INFO: Sending rpc...
+2024-05-27T16:54:16: %NETCONF-INFO: <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="107">
+  <nxos:exec-command>
+    <nxos:cmd>conf t ; ip access-list aclnqt ; 10 permit ip 10.10.10.1/24 any ; 20 permit ip 192.168.10.1/24 any</nxos:cmd>
+  </nxos:exec-command>
+</nf:rpc>
+2024-05-27T16:54:17: %NETCONF-INFO: Receiving rpc-reply after 0.230 sec...
+2024-05-27T16:54:17: %NETCONF-INFO: <nf:rpc-reply xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="107">
+  <nf:ok/>
+</nf:rpc-reply>
+Configuration Reply:
+2024-05-27T16:54:17: %NETCONF-INFO: Sending rpc...
+2024-05-27T16:54:17: %NETCONF-INFO: <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="108">
+  <nxos:exec-command>
+    <nxos:cmd>show ip access-lists aclnqt</nxos:cmd>
+  </nxos:exec-command>
+</nf:rpc>
+2024-05-27T16:54:17: %NETCONF-INFO: Receiving rpc-reply after 0.105 sec...
+2024-05-27T16:54:17: %NETCONF-INFO: <nf:rpc-reply xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" xmlns:mod="http://www.cisco.com/nxos:1.0:aclmgr" message-id="108">
+  <nf:data>
+    <mod:show>
+      <mod:__XML__OPT_Cmd_show_acl_ip_ipv6_mac>
+        <mod:ip_ipv6_mac>ip</mod:ip_ipv6_mac>
+        <mod:access-lists>
+          <mod:__XML__OPT_Cmd_show_acl_name>
+            <mod:name>aclnqt</mod:name>
+            <mod:__XML__OPT_Cmd_show_acl_capture>
+              <mod:__XML__OPT_Cmd_show_acl_expanded>
+                <mod:__XML__OPT_Cmd_show_acl___readonly__>
+                  <mod:__readonly__>
+                    <mod:TABLE_ip_ipv6_mac>
+                      <mod:ROW_ip_ipv6_mac>
+                        <mod:op_ip_ipv6_mac>ip</mod:op_ip_ipv6_mac>
+                        <mod:show_summary>0</mod:show_summary>
+                        <mod:acl_name>aclnqt</mod:acl_name>
+                        <mod:TABLE_seqno>
+                          <mod:ROW_seqno>
+                            <mod:seqno>10</mod:seqno>
+
+
+... skipping 5 lines ...
+
+
+                          <mod:ROW_seqno>
+                            <mod:seqno>20</mod:seqno>
+                            <mod:permitdeny>permit</mod:permitdeny>
+                            <mod:ip>ip</mod:ip>
+                            <mod:src_ip_prefix>192.168.10.1/24</mod:src_ip_prefix>
+                            <mod:dest_any>any</mod:dest_any>
+                          </mod:ROW_seqno>
+                        </mod:TABLE_seqno>
+                      </mod:ROW_ip_ipv6_mac>
+                    </mod:TABLE_ip_ipv6_mac>
+                  </mod:__readonly__>
+                </mod:__XML__OPT_Cmd_show_acl___readonly__>
+              </mod:__XML__OPT_Cmd_show_acl_expanded>
+            </mod:__XML__OPT_Cmd_show_acl_capture>
+          </mod:__XML__OPT_Cmd_show_acl_name>
+        </mod:access-lists>
+      </mod:__XML__OPT_Cmd_show_acl_ip_ipv6_mac>
+    </mod:show>
+  </nf:data>
+</nf:rpc-reply>
+Verification Reply:
+NETCONF connected after disconnect: False
