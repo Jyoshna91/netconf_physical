@@ -1,0 +1,75 @@
+testbed file:-
+
+devices:
+  n9k1:
+    type: 'router'
+    connections:
+      cli:
+        protocol: ssh
+        ip: "10.133.35.148"
+        port: 22
+      netconf:
+        class: yang.connector.Netconf
+        ip: "10.133.35.148"
+        port: 22
+        username: "admin"
+        password: "tcs123"
+
+testcase file:-
+from pyats.topology import loader
+from genie.testbed import load
+from pyats import aetest
+import re, logging
+
+# Load the testbed YAML file
+testbed = loader.load("testbed.yaml")
+
+# Access the device using the new name 'n9k1'
+device = testbed.devices['n9k1']
+
+# Connect to the device via netconf
+device.connect(alias='nc', via='netconf')
+
+print("NETCONF connected:", device.nc.connected)
+
+# Define the configuration XML structure
+command_request = """
+<?xml version="1.0" encoding="UTF-8"?>
+<nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+    <nxos:exec-command>
+        <nxos:cmd>conf t ; ip access-list aclnqt ; 10 permit ip 10.10.10.1/24 any ; 20 permit ip 192.168.10.1/24 any</nxos:cmd>
+    </nxos:exec-command>
+</nf:rpc>
+"""
+
+# Send the configuration command
+try:
+    reply_command = device.nc.request(command_request)
+    print("Configuration Reply:")
+    #print(reply_command)
+except Exception as e:
+    print(f"Failed to send configuration command: {e}")
+
+# Define the verification XML structure
+verification_request = """
+<?xml version="1.0" encoding="UTF-8"?>
+<nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+    <nxos:exec-command>
+        <nxos:cmd>show ip access-lists aclnqt</nxos:cmd>
+    </nxos:exec-command>
+</nf:rpc>
+"""
+
+# Send the verification command
+try:
+    verification_reply = device.nc.request(verification_request)
+    print("Verification Reply:")
+    #print(verification_reply)
+except Exception as e:
+    print(f"Failed to send verification command: {e}")
+
+# Disconnect from the device
+device.nc.disconnect()
+
+# Check if the connection is closed
+print("NETCONF connected after disconnect:", device.nc.connected)
