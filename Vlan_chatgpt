@@ -1,68 +1,23 @@
-job file:-
-from pyats.easypy import Task
-import os
-
-def main(runtime):
-    # Define the test script file path
-    script_path = os.path.join(os.path.dirname(__file__), 'vlan_config_test.py')
-
-    # Execute the test script and wait for completion
-    task = Task(testscript=script_path)
-    task.start()
-    task.wait()
-
-lib file:-
-
-from pyats.topology import loader
-
-class NetworkLibrary:
-    @staticmethod
-    def get_testbed():
-        return loader.load("testbed.yaml")
-
-    @staticmethod
-    def connect_to_device(testbed, device_name='n9k1'):
-        device = testbed.devices[device_name]
-        device.connect(alias='nc', via='netconf')
-        return device
-
-    @staticmethod
-    def vlan_configuration_request():
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
-            <nxos:exec-command>
-                <nxos:cmd>configure terminal ; vlan 100 ; name test_vlan ; interface Vlan21 ; ip address 192.168.10.1/24</nxos:cmd>
-            </nxos:exec-command>
-        </nf:rpc>
-        """
-
-    @staticmethod
-    def verify_vlan_request():
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
-            <nxos:exec-command>
-                <nxos:cmd>show running-config interface Vlan21</nxos:cmd>
-            </nxos:exec-command>
-        </nf:rpc>
-        """
-
-
-maint case file:-
 from pyats import aetest
 from network_lib import NetworkLibrary
 import re
 
-class VlanConfigTest(aetest.Testcase):
+class CommonSetup(aetest.CommonSetup):
 
-    @aetest.setup
-    def setup(self):
+    @aetest.subsection
+    def connect_to_device(self, testbed):
         # Load the testbed
         self.testbed = NetworkLibrary.get_testbed()
         # Connect to the device
         self.device = NetworkLibrary.connect_to_device(self.testbed)
         assert self.device.nc.connected, "Failed to connect to device via NETCONF"
+
+class VlanConfigTest(aetest.Testcase):
+
+    @aetest.setup
+    def setup(self):
+        # Get the device from common setup
+        self.device = self.parent.parameters['device']
 
     @aetest.test
     def configure_vlan(self):
@@ -98,11 +53,15 @@ class VlanConfigTest(aetest.Testcase):
         except Exception as e:
             self.failed(f"Failed to send verification command: {e}")
 
-    @aetest.cleanup
-    def cleanup(self):
+class CommonCleanup(aetest.CommonCleanup):
+
+    @aetest.subsection
+    def disconnect_from_device(self):
+        # Get the device from common setup
+        device = self.parent.parameters['device']
         # Disconnect from the device
-        self.device.nc.disconnect()
-        print("NETCONF connected after disconnect:", self.device.nc.connected)
+        device.nc.disconnect()
+        print("NETCONF connected after disconnect:", device.nc.connected)
 
 if __name__ == "__main__":
     aetest.main()
