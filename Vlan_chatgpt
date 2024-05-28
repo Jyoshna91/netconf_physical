@@ -1,70 +1,29 @@
-job file:-
-from pyats.easypy import Task
-import os
-
-def main(runtime):
-    # Define the test script file path
-    script_path = os.path.join(os.path.dirname(__file__), 'vlan_config_test.py')
-
-    # Execute the test script
-    Task(testscript=script_path).start()
-
-lib file:-
-
 from pyats.topology import loader
 from pyats import aetest
-
-class NetworkLibrary:
-    @staticmethod
-    def get_testbed():
-        return loader.load("testbed.yaml")
-
-    @staticmethod
-    def connect_to_device(testbed, device_name='n9k1'):
-        device = testbed.devices[device_name]
-        device.connect(alias='nc', via='netconf')
-        return device
-
-    @staticmethod
-    def vlan_configuration_request():
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
-            <nxos:exec-command>
-                <nxos:cmd>configure terminal ; vlan 10 ; name TestVLAN ; interface Vlan10 ; ip address 192.168.10.1/24</nxos:cmd>
-            </nxos:exec-command>
-        </nf:rpc>
-        """
-
-    @staticmethod
-    def verify_vlan_request():
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
-            <nxos:exec-command>
-                <nxos:cmd>show running-config interface Vlan10</nxos:cmd>
-            </nxos:exec-command>
-        </nf:rpc>
-        """
-
-test case file:-
-from pyats import aetest
-from network_lib import NetworkLibrary
 
 class VlanConfigTest(aetest.Testcase):
 
     @aetest.setup
     def setup(self):
-        # Load the testbed
-        self.testbed = NetworkLibrary.get_testbed()
-        # Connect to the device
-        self.device = NetworkLibrary.connect_to_device(self.testbed)
+        # Load the testbed YAML file
+        self.testbed = loader.load("testbed.yaml")
+        # Access the device using the name 'n9k1'
+        self.device = self.testbed.devices['n9k1']
+        # Connect to the device via netconf
+        self.device.connect(alias='nc', via='netconf')
         assert self.device.nc.connected, "Failed to connect to device via NETCONF"
 
     @aetest.test
     def configure_vlan(self):
-        # Get the VLAN configuration request
-        command_request = NetworkLibrary.vlan_configuration_request()
+        # Define the NETCONF request for VLAN configuration
+        command_request = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; vlan 21 ; name TestVLAN2 ; interface Vlan21 ; ip address 192.168.10.1/24</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
 
         # Send the configuration command
         try:
@@ -76,8 +35,15 @@ class VlanConfigTest(aetest.Testcase):
 
     @aetest.test
     def verify_vlan(self):
-        # Get the verification request
-        verification_request = NetworkLibrary.verify_vlan_request()
+        # Define the verification XML structure
+        verification_request = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show running-config interface Vlan10</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
 
         # Send the verification command
         try:
