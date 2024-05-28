@@ -23,13 +23,17 @@ if device.nc.connected:
     print("NETCONF Connected")
 
     # Define the NETCONF request for configuring RIP
+
     netconf_request = """
+
     <?xml version="1.0" encoding="UTF-8"?>
-    <nf:rpc message-id="104" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
-        <nxos:exec-command>
-            <nxos:cmd>configure terminal ; router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24</nxos:cmd>
-        </nxos:exec-command>
+    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+    xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
+      <nxos:exec-command>
+        <nxos:cmd>configure terminal ; router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24</nxos:cmd>
+      </nxos:exec-command>
     </nf:rpc>
+
     """
 
     # Send the NETCONF request and get the response
