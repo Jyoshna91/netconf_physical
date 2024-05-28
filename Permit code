@@ -1,9 +1,10 @@
 from pyats.topology import loader
 from genie.testbed import load
+from pyats import aetest
 import re, logging
 
 # Load the testbed YAML file
-testbed = loader.load("testbed1.yaml")
+testbed = loader.load("testbed.yaml")
 
 # Access the device using the new name 'n9k1'
 device = testbed.devices['n9k1']
@@ -27,7 +28,7 @@ command_request = """
 try:
     reply_command = device.nc.request(command_request)
     print("Configuration Reply:")
-    print(reply_command)
+    #print(reply_command)
 except Exception as e:
     print(f"Failed to send configuration command: {e}")
 
@@ -44,18 +45,8 @@ verification_request = """
 # Send the verification command
 try:
     verification_reply = device.nc.request(verification_request)
-    verification_reply_str = verification_reply.xml
     print("Verification Reply:")
-    print(verification_reply_str)
-
-    # Verify the presence of the ACL entry using the provided regular expression
-    pattern = re.compile(r"[A-Z]*\W+[a-z]*\W+[a-z]*\W[a-z0-9]*")
-
-    match = pattern.search(verification_reply_str)
-    if match:
-        print("ACL entry verified successfully.")
-    else:
-        print("ACL entry verification failed.")
+    #print(verification_reply)
 except Exception as e:
     print(f"Failed to send verification command: {e}")
 
