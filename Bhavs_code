@@ -49,3 +49,42 @@ if device.nc.connected:
     print("NETCONF Disconnected")
 else:
     print("NETCONF Connection Failed")
+
+
+
+
+NETCONF Connected
+2024-05-28T10:30:10: %NETCONF-INFO: Sending rpc...
+2024-05-28T10:30:10: %NETCONF-INFO: <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
+  <nxos:exec-command>
+    <nxos:cmd>configure terminal ; router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24 </nxos:cmd>
+  </nxos:exec-command>
+</nf:rpc>
+2024-05-28T10:30:10: %NETCONF-INFO: Receiving rpc-reply after 0.107 sec...
+2024-05-28T10:30:10: %NETCONF-INFO: <nf:rpc-reply xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
+  <nf:rpc-error>
+    <nf:error-type>application</nf:error-type>
+    <nf:error-tag>invalid-value</nf:error-tag>
+    <nf:error-severity>error</nf:error-severity>
+    <nf:error-message>Syntax error while parsing ' router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24'
+</nf:error-message>
+    <nf:error-info>
+      <nf:bad-element>&lt;cmd&gt;</nf:bad-element>
+    </nf:error-info>
+  </nf:rpc-error>
+</nf:rpc-reply>
+Response:
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<nf:rpc-reply xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
+  <nf:rpc-error>
+    <nf:error-type>application</nf:error-type>
+    <nf:error-tag>invalid-value</nf:error-tag>
+    <nf:error-severity>error</nf:error-severity>
+    <nf:error-message>Syntax error while parsing ' router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24'
+</nf:error-message>
+    <nf:error-info>
+      <nf:bad-element>&lt;cmd&gt;</nf:bad-element>
+    </nf:error-info>
+  </nf:rpc-error>
+</nf:rpc-reply>
+NETCONF Disconnected
