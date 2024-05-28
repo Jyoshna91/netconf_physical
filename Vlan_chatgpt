@@ -1,3 +1,14 @@
+job file:-
+from pyats.easypy import Task
+import os
+
+def main(runtime):
+    # Define the test script file path
+    script_path = os.path.join(os.path.dirname(__file__), 'vlan_config_test.py')
+
+    # Execute the test script
+    Task(testscript=script_path).start()
+
 lib file:-
 
 from pyats.topology import loader
