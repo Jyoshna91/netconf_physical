@@ -1,23 +1,34 @@
+job file:-
+from pyats.easypy import Task
+import os
+
+def main(runtime):
+    # Define the test script file path
+    script_path = os.path.join(os.path.dirname(__file__), 'vlan_config_test.py')
+
+    # Execute the test script and wait for completion
+    task = Task(testscript=script_path)
+    task.start()
+    task.wait()
+
+lib file:-
+
 from pyats.topology import loader
-from pyats import aetest
-import re
 
-class VlanConfigTest(aetest.Testcase):
+class NetworkLibrary:
+    @staticmethod
+    def get_testbed():
+        return loader.load("testbed.yaml")
 
-    @aetest.setup
-    def setup(self):
-        # Load the testbed YAML file
-        self.testbed = loader.load("testbed.yaml")
-        # Access the device using the name 'n9k1'
-        self.device = self.testbed.devices['n9k1']
-        # Connect to the device via netconf
-        self.device.connect(alias='nc', via='netconf')
-        assert self.device.nc.connected, "Failed to connect to device via NETCONF"
+    @staticmethod
+    def connect_to_device(testbed, device_name='n9k1'):
+        device = testbed.devices[device_name]
+        device.connect(alias='nc', via='netconf')
+        return device
 
-    @aetest.test
-    def configure_vlan(self):
-        # Define the NETCONF request for VLAN configuration
-        command_request = """
+    @staticmethod
+    def vlan_configuration_request():
+        return """
         <?xml version="1.0" encoding="UTF-8"?>
         <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
             <nxos:exec-command>
@@ -26,21 +37,9 @@ class VlanConfigTest(aetest.Testcase):
         </nf:rpc>
         """
 
-        # Send the configuration command
-
-        try:
-            reply_command = self.device.nc.request(command_request)
-            print("Configuration Reply:")
-            print(reply_command)
-
-
-        except Exception as e:
-            self.failed(f"Failed to send configuration command: {e}")
-
-    @aetest.test
-    def verify_vlan(self):
-        # Define the verification XML structure
-        verification_request = """
+    @staticmethod
+    def verify_vlan_request():
+        return """
         <?xml version="1.0" encoding="UTF-8"?>
         <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
             <nxos:exec-command>
@@ -48,6 +47,40 @@ class VlanConfigTest(aetest.Testcase):
             </nxos:exec-command>
         </nf:rpc>
         """
+
+
+maint case file:-
+from pyats import aetest
+from network_lib import NetworkLibrary
+import re
+
+class VlanConfigTest(aetest.Testcase):
+
+    @aetest.setup
+    def setup(self):
+        # Load the testbed
+        self.testbed = NetworkLibrary.get_testbed()
+        # Connect to the device
+        self.device = NetworkLibrary.connect_to_device(self.testbed)
+        assert self.device.nc.connected, "Failed to connect to device via NETCONF"
+
+    @aetest.test
+    def configure_vlan(self):
+        # Get the VLAN configuration request
+        command_request = NetworkLibrary.vlan_configuration_request()
+
+        # Send the configuration command
+        try:
+            reply_command = self.device.nc.request(command_request)
+            print("Configuration Reply:")
+            print(reply_command)
+        except Exception as e:
+            self.failed(f"Failed to send configuration command: {e}")
+
+    @aetest.test
+    def verify_vlan(self):
+        # Get the verification request
+        verification_request = NetworkLibrary.verify_vlan_request()
 
         # Send the verification command
         try:
@@ -58,16 +91,9 @@ class VlanConfigTest(aetest.Testcase):
             # Use regular expression to check if Vlan21 is present in the output
             vlan_present = re.search(r'interface Vlan21', verification_reply)
             if vlan_present:
-                print("configuration done.")
+                print("Vlan21 is present in the configuration.")
             else:
-                self.failed("configuration not done.")
-
-
-        #try:
-        #    verification_reply = self.device.nc.request(verification_request)
-        #    print("Verification Reply:")
-        #    print(verification_reply)
-
+                self.failed("Vlan21 is not present in the configuration.")
 
         except Exception as e:
             self.failed(f"Failed to send verification command: {e}")
