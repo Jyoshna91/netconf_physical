@@ -1,6 +1,47 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<nf:rpc message-id="104" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
-    <nxos:exec-command>
-        <nxos:cmd>configure terminal ; router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24</nxos:cmd>
-    </nxos:exec-command>
-</nf:rpc>]]>]]>
+from pyats.topology import Device
+
+# Define connection parameters
+device_params = {
+    'name': 'n9k1',
+    'connections': {
+        'netconf': {
+            'class': 'yang.connector.Netconf',
+            'ip': '10.133.35.148',  # Replace with the actual IP address of your device
+            'port': 22,  # NETCONF port
+            'username': 'admin',  # NETCONF username
+            'password': 'tcs123',  # NETCONF password
+        }
+    }
+}
+
+# Create a Device instance
+device = Device(**device_params)
+
+# Connect to the device
+device.connect(alias='nc', via='netconf')
+if device.nc.connected:
+    print("NETCONF Connected")
+
+    # Define the NETCONF request for configuring RIP
+    netconf_request = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <nf:rpc message-id="104" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+        <nxos:exec-command>
+            <nxos:cmd>configure terminal ; router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24</nxos:cmd>
+        </nxos:exec-command>
+    </nf:rpc>
+    """
+
+    # Send the NETCONF request and get the response
+    try:
+        reply = device.nc.request(netconf_request)
+        print("Response:")
+        print(reply)
+    except Exception as e:
+        print(f"Error: {e}")
+
+    # Disconnect from the device
+    device.nc.disconnect()
+    print("NETCONF Disconnected")
+else:
+    print("NETCONF Connection Failed")
