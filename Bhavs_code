@@ -7,7 +7,7 @@ device_params = {
         'netconf': {
             'class': 'yang.connector.Netconf',
             'ip': '10.133.35.148',  # Replace with the actual IP address of your device
-            'port': 22,  # NETCONF port
+            'port': 830,  # NETCONF port (typically 830 for NETCONF)
             'username': 'admin',  # NETCONF username
             'password': 'tcs123',  # NETCONF password
         }
@@ -22,64 +22,24 @@ device.connect(alias='nc', via='netconf')
 if device.nc.connected:
     print("NETCONF Connected")
 
-    # Define the NETCONF request for entering configuration mode
-    config_mode_request = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
-            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
-      <nxos:exec-command>
-        <nxos:cmd>configure terminal</nxos:cmd>
-      </nxos:exec-command>
-    </nf:rpc>
-    """
-
     # Define the NETCONF request for configuring RIP
-    configure_rip_request = """
+    netconf_request = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
-            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="105">
-      <nxos:exec-command>
-        <nxos:cmd>router rip sample</nxos:cmd>
-      </nxos:exec-command>
+    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
+        <nxos:exec-command>
+            <nxos:cmd>configure terminal</nxos:cmd>
+            <nxos:cmd>router rip sample</nxos:cmd>
+            <nxos:cmd>address-family ipv4 unicast</nxos:cmd>
+            <nxos:cmd>network 192.168.1.0/24</nxos:cmd>
+        </nxos:exec-command>
     </nf:rpc>
     """
 
-    # Define the NETCONF request for setting the address family
-    address_family_request = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
-            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="106">
-      <nxos:exec-command>
-        <nxos:cmd>address-family ipv4 unicast</nxos:cmd>
-      </nxos:exec-command>
-    </nf:rpc>
-    """
-
-    # Define the NETCONF request for adding the network
-    add_network_request = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
-            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="107">
-      <nxos:exec-command>
-        <nxos:cmd>network 192.168.1.0/24</nxos:cmd>
-      </nxos:exec-command>
-    </nf:rpc>
-    """
-
-    # List of NETCONF requests
-    netconf_requests = [
-        config_mode_request,
-        configure_rip_request,
-        address_family_request,
-        add_network_request
-    ]
-
-    # Send the NETCONF requests and get the responses
+    # Send the NETCONF request and get the response
     try:
-        for request in netconf_requests:
-            reply = device.nc.request(request)
-            print("Response:")
-            print(reply)
+        reply = device.nc.request(netconf_request)
+        print("Response:")
+        print(reply)
     except Exception as e:
         print(f"Error: {e}")
 
