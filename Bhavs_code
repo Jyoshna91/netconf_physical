@@ -22,25 +22,64 @@ device.connect(alias='nc', via='netconf')
 if device.nc.connected:
     print("NETCONF Connected")
 
-    # Define the NETCONF request for configuring RIP
-
-    netconf_request = """
-
+    # Define the NETCONF request for entering configuration mode
+    config_mode_request = """
     <?xml version="1.0" encoding="UTF-8"?>
     <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
-    xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
+            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
       <nxos:exec-command>
-        <nxos:cmd>configure terminal ; router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24</nxos:cmd>
+        <nxos:cmd>configure terminal</nxos:cmd>
       </nxos:exec-command>
     </nf:rpc>
-
     """
 
-    # Send the NETCONF request and get the response
+    # Define the NETCONF request for configuring RIP
+    configure_rip_request = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="105">
+      <nxos:exec-command>
+        <nxos:cmd>router rip sample</nxos:cmd>
+      </nxos:exec-command>
+    </nf:rpc>
+    """
+
+    # Define the NETCONF request for setting the address family
+    address_family_request = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="106">
+      <nxos:exec-command>
+        <nxos:cmd>address-family ipv4 unicast</nxos:cmd>
+      </nxos:exec-command>
+    </nf:rpc>
+    """
+
+    # Define the NETCONF request for adding the network
+    add_network_request = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
+            xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="107">
+      <nxos:exec-command>
+        <nxos:cmd>network 192.168.1.0/24</nxos:cmd>
+      </nxos:exec-command>
+    </nf:rpc>
+    """
+
+    # List of NETCONF requests
+    netconf_requests = [
+        config_mode_request,
+        configure_rip_request,
+        address_family_request,
+        add_network_request
+    ]
+
+    # Send the NETCONF requests and get the responses
     try:
-        reply = device.nc.request(netconf_request)
-        print("Response:")
-        print(reply)
+        for request in netconf_requests:
+            reply = device.nc.request(request)
+            print("Response:")
+            print(reply)
     except Exception as e:
         print(f"Error: {e}")
 
@@ -49,42 +88,3 @@ if device.nc.connected:
     print("NETCONF Disconnected")
 else:
     print("NETCONF Connection Failed")
-
-
-
-
-NETCONF Connected
-2024-05-28T10:30:10: %NETCONF-INFO: Sending rpc...
-2024-05-28T10:30:10: %NETCONF-INFO: <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
-  <nxos:exec-command>
-    <nxos:cmd>configure terminal ; router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24 </nxos:cmd>
-  </nxos:exec-command>
-</nf:rpc>
-2024-05-28T10:30:10: %NETCONF-INFO: Receiving rpc-reply after 0.107 sec...
-2024-05-28T10:30:10: %NETCONF-INFO: <nf:rpc-reply xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
-  <nf:rpc-error>
-    <nf:error-type>application</nf:error-type>
-    <nf:error-tag>invalid-value</nf:error-tag>
-    <nf:error-severity>error</nf:error-severity>
-    <nf:error-message>Syntax error while parsing ' router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24'
-</nf:error-message>
-    <nf:error-info>
-      <nf:bad-element>&lt;cmd&gt;</nf:bad-element>
-    </nf:error-info>
-  </nf:rpc-error>
-</nf:rpc-reply>
-Response:
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<nf:rpc-reply xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="104">
-  <nf:rpc-error>
-    <nf:error-type>application</nf:error-type>
-    <nf:error-tag>invalid-value</nf:error-tag>
-    <nf:error-severity>error</nf:error-severity>
-    <nf:error-message>Syntax error while parsing ' router rip sample; address-family ipv4 unicast ; network 192.168.1.0/24'
-</nf:error-message>
-    <nf:error-info>
-      <nf:bad-element>&lt;cmd&gt;</nf:bad-element>
-    </nf:error-info>
-  </nf:rpc-error>
-</nf:rpc-reply>
-NETCONF Disconnected
