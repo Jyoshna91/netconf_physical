@@ -1,5 +1,6 @@
 from pyats.topology import loader
 from pyats import aetest
+import re
 
 class VlanConfigTest(aetest.Testcase):
 
@@ -20,16 +21,19 @@ class VlanConfigTest(aetest.Testcase):
         <?xml version="1.0" encoding="UTF-8"?>
         <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
             <nxos:exec-command>
-                <nxos:cmd>configure terminal ; vlan 21 ; name TestVLAN2 ; interface Vlan21 ; ip address 192.168.10.1/24</nxos:cmd>
+                <nxos:cmd>configure terminal ; vlan 100 ; name test_vlan ; interface Vlan21 ; ip address 192.168.10.1/24</nxos:cmd>
             </nxos:exec-command>
         </nf:rpc>
         """
 
         # Send the configuration command
+
         try:
             reply_command = self.device.nc.request(command_request)
             print("Configuration Reply:")
             print(reply_command)
+
+
         except Exception as e:
             self.failed(f"Failed to send configuration command: {e}")
 
@@ -40,7 +44,7 @@ class VlanConfigTest(aetest.Testcase):
         <?xml version="1.0" encoding="UTF-8"?>
         <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
             <nxos:exec-command>
-                <nxos:cmd>show running-config interface Vlan10</nxos:cmd>
+                <nxos:cmd>show running-config interface Vlan21</nxos:cmd>
             </nxos:exec-command>
         </nf:rpc>
         """
@@ -50,6 +54,21 @@ class VlanConfigTest(aetest.Testcase):
             verification_reply = self.device.nc.request(verification_request)
             print("Verification Reply:")
             print(verification_reply)
+
+            # Use regular expression to check if Vlan21 is present in the output
+            vlan_present = re.search(r'interface Vlan21', verification_reply)
+            if vlan_present:
+                print("configuration done.")
+            else:
+                self.failed("configuration not done.")
+
+
+        #try:
+        #    verification_reply = self.device.nc.request(verification_request)
+        #    print("Verification Reply:")
+        #    print(verification_reply)
+
+
         except Exception as e:
             self.failed(f"Failed to send verification command: {e}")
 
@@ -61,17 +80,3 @@ class VlanConfigTest(aetest.Testcase):
 
 if __name__ == "__main__":
     aetest.main()
-
-try:
-            verification_reply = self.device.nc.request(verification_request)
-            print("Verification Reply:")
-            print(verification_reply)
-
-            # Use regular expression to check if Vlan21 is present in the output
-            vlan_present = re.search(r'interface Vlan21', verification_reply.xml)
-            if vlan_present:
-                print("Vlan21 is present in the configuration.")
-            else:
-                self.failed("Vlan21 is not present in the configuration.")
-
-       
