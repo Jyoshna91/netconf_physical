@@ -61,3 +61,17 @@ class VlanConfigTest(aetest.Testcase):
 
 if __name__ == "__main__":
     aetest.main()
+
+try:
+            verification_reply = self.device.nc.request(verification_request)
+            print("Verification Reply:")
+            print(verification_reply)
+
+            # Use regular expression to check if Vlan21 is present in the output
+            vlan_present = re.search(r'interface Vlan21', verification_reply.xml)
+            if vlan_present:
+                print("Vlan21 is present in the configuration.")
+            else:
+                self.failed("Vlan21 is not present in the configuration.")
+
+       
