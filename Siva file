@@ -132,3 +132,13 @@ devices:
         password: "tcs123"
 
 
+
+
+from pyats.easypy import run
+import os
+
+def main():
+    path = os.path.dirname(__file__)
+    run(testscript=os.path.join(path, 'netconf_testcase.py'), datafile=os.path.join(path, 'netconf_datafile.yaml'))
+
+
