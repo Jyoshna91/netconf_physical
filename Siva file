@@ -116,6 +116,19 @@ bound1: 'out'
 
 
 
-
+devices:
+  n9k1:
+    type: 'router'
+    connections:
+      cli:
+        protocol: ssh
+        ip: "10.133.35.148"
+        port: 22
+      netconf:
+        class: yang.connector.Netconf
+        ip: "10.133.35.148"
+        port: 22
+        username: "admin"
+        password: "tcs123"
 
 
