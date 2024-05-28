@@ -1,104 +1,66 @@
+from genie.testbed import load
+from pyats.topology import loader
 from pyats import aetest
-from ncclient import manager
-from lxml import etree
+import re, logging
+import pdb
+from netconf_lib import NetconfCommonFunctions
 
-class NetconfTest(aetest.Testcase):
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-    @aetest.setup
-    def setup(self):
-        self.router_ip = "10.133.35.148"
-        self.username = "admin"
-        self.password = "tcs123"
-        self.port = 830
+class CommonSetup(aetest.CommonSetup):
+    @aetest.subsection
+    def connect_to_devices(self, testbed):
+        global device
+        device = testbed.devices['n9k1']
+        device.connect(alias='nc', via='netconf')
+        assert device.nc.connected, "Device connection failed"
 
-    @aetest.test
-    def test_netconf_connection(self):
-        hello_xml = """<?xml version="1.0" encoding="UTF-8"?>
-        <hello xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-          <capabilities>
-            <capability>urn:ietf:params:netconf:base:1.0</capability>
-          </capabilities>
-        </hello>]]>]]>"""
-
-        try:
-            with manager.connect(host=self.router_ip,
-                                 port=self.port,
-                                 username=self.username,
-                                 password=self.password,
-                                 hostkey_verify=False) as m:
-                m.send(etree.fromstring(hello_xml))
-            self.passed("Successfully established NETCONF connection to the router.")
-        except Exception as e:
-            self.failed(f"Failed to establish NETCONF connection: {e}")
+class Testcase(aetest.Testcase):
+    acl_name = 'aclnqt'
 
     @aetest.test
-    def test_execute_command(self):
-        rpc_xml = """<?xml version="1.0"?>
-        <nf:rpc xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0"
-                xmlns:nxos="http://www.cisco.com/nxos:1.0" message-id="110">
-          <nxos:exec-command>
-            <nxos:cmd>show ip interface brief</nxos:cmd>
-          </nxos:exec-command>
-        </nf:rpc>]]>]]>"""
-
+    def configure_acl(self):
         try:
-            with manager.connect(host=self.router_ip,
-                                 port=self.port,
-                                 username=self.username,
-                                 password=self.password,
-                                 hostkey_verify=False) as m:
-                response = m.dispatch(etree.fromstring(rpc_xml))
-                # Further validation and processing of response can be done here
-            self.passed("Successfully executed command via NETCONF.")
+            reply_command = NetconfCommonFunctions.configure_acl(device)
+            logging.info("Configuration Reply: %s", reply_command)
         except Exception as e:
-            self.failed(f"Failed to execute command via NETCONF: {e}")
+            self.failed(f"Failed to send configuration command: {e}")
 
-if __name__ == "__main__":
-    aetest.main()
+    @aetest.test
+    def verify_acl(self):
+        verification_request = f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show ip access-lists {self.acl_name}</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+        try:
+            verification_reply = device.nc.request(verification_request)
+            logging.info("Verification Reply: %s", verification_reply)
+        except Exception as e:
+            self.failed(f"Failed to send verification command: {e}")
 
+    @aetest.cleanup
+    def disconnect(self):
+        device.nc.disconnect()
+        assert not device.nc.connected, "Device disconnection failed"
 
+class CommonCleanup(aetest.CommonCleanup):
+    @aetest.subsection
+    def disconnect(self):
+        device.nc.disconnect()
+        assert not device.nc.connected, "Device disconnection failed"
 
+if __name__ == '__main__':
+    import argparse
+    from pyats import aetest
+    from genie.testbed import load
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--testbed', dest='testbed', type=loader.load)
+    args, unknown = parser.parse_known_args()
 
-
-2024-05-24T16:33:43: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:43: %AETEST-INFO: |                        Starting testcase NetconfTest                         |
-2024-05-24T16:33:43: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:43: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:43: %AETEST-INFO: |                            Starting section setup                            |
-2024-05-24T16:33:43: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:43: %AETEST-INFO: The result of section setup is => PASSED
-2024-05-24T16:33:43: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:43: %AETEST-INFO: |                   Starting section test_netconf_connection                   |
-2024-05-24T16:33:43: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:44: %AETEST-ERROR: Failed reason: Failed to establish NETCONF connection: Unicode strings with encoding declaration are not supported. Please use bytes input or XML fragments without declaration.
-2024-05-24T16:33:44: %AETEST-INFO: The result of section test_netconf_connection is => FAILED
-2024-05-24T16:33:44: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:44: %AETEST-INFO: |                    Starting section test_execute_command                     |
-2024-05-24T16:33:44: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:44: %AETEST-ERROR: Failed reason: Failed to execute command via NETCONF: Extra content at the end of the document, line 7, column 12 (<string>, line 7)
-2024-05-24T16:33:44: %AETEST-INFO: The result of section test_execute_command is => FAILED
-2024-05-24T16:33:44: %AETEST-INFO: The result of testcase NetconfTest is => FAILED
-2024-05-24T16:33:44: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:44: %AETEST-INFO: |                               Detailed Results                               |
-2024-05-24T16:33:44: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:44: %AETEST-INFO:  SECTIONS/TESTCASES                                                      RESULT
-2024-05-24T16:33:44: %AETEST-INFO: --------------------------------------------------------------------------------
-2024-05-24T16:33:44: %AETEST-INFO: .
-2024-05-24T16:33:44: %AETEST-INFO: `-- NetconfTest                                                           FAILED
-2024-05-24T16:33:44: %AETEST-INFO:     |-- setup                                                             PASSED
-2024-05-24T16:33:44: %AETEST-INFO:     |-- test_netconf_connection                                           FAILED
-2024-05-24T16:33:44: %AETEST-INFO:     `-- test_execute_command                                              FAILED
-2024-05-24T16:33:44: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:44: %AETEST-INFO: |                                   Summary                                    |
-2024-05-24T16:33:44: %AETEST-INFO: +------------------------------------------------------------------------------+
-2024-05-24T16:33:44: %AETEST-INFO:  Number of ABORTED                                                            0
-2024-05-24T16:33:44: %AETEST-INFO:  Number of BLOCKED                                                            0
-2024-05-24T16:33:44: %AETEST-INFO:  Number of ERRORED                                                            0
-2024-05-24T16:33:44: %AETEST-INFO:  Number of FAILED                                                             1
-2024-05-24T16:33:44: %AETEST-INFO:  Number of PASSED                                                             0
-2024-05-24T16:33:44: %AETEST-INFO:  Number of PASSX                                                              0
-2024-05-24T16:33:44: %AETEST-INFO:  Number of SKIPPED                                                            0
-2024-05-24T16:33:44: %AETEST-INFO:  Total Number                                                                 1
-2024-05-24T16:33:44: %AETEST-INFO:  Success Rate                                                              0.0%
-2024-05-24T16:33:44: %AETEST-INFO: --------------------------------------------------------------------------------
+    aetest.main(**vars(args))
