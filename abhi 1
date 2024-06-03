@@ -53,3 +53,82 @@ class CommonCleanup(aetest.CommonCleanup):
                     print("Device is disconnected")
                     print(" ")
                     print("#####################################################################################")
+
+
+
+
+
+
+
+
+
+
+
+from ncclient import manager,xml_
+from pyats.topology import loader
+from pyats import aetest
+from lxml import etree
+from genie.testbed import load
+import pdb
+from s2_lib import Rip_common_functions
+from genie.testbed import load
+import re, logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+device_list = ['n9k1','n9k2']
+
+'''
+class CommonSetup(aetest.CommonSetup):
+
+        @aetest.subsection
+        def connect_to_device(self):
+                testbed = loader.load("testbed.yaml")
+#                device_list = ['n9k1','n9k2']
+                for d in device_list:
+                    device = testbed.devices[d]
+                    device.connect(alias='nc', via='netconf')
+                    print("#####################################################################################")
+                    print(" ")
+                    if device.nc.connected:
+                        print("{} is connected".format(d))
+                    else:
+                        print("{} is not connected".format(d))
+                    print(" ")
+                    print("#####################################################################################")
+'''
+class Netconf_rpctest(aetest.Testcase):
+
+        @aetest.setup
+        def setup(self):
+                testbed = loader.load("testbed.yaml")
+                for d in device_list:
+                    device = testbed.devices[d]
+                    device.connect(alias='nc', via='netconf')
+                    print("#####################################################################################")
+                    print(" ")
+                    if device.nc.connected:
+                        print("{} is connected".format(d))
+                    else:
+                        print("{} is not connected".format(d))
+                    print(" ")
+                    print("#####################################################################################")
+
+                Rip_common_functions.configure_rip_routers(device)
+#                Rip_common_functions.configure_rip_router_interfaces(device)
+                Rip_common_functions.show_rip_routers(device)
+                Rip_common_functions.unconfigure_rip_routers(device)
+'''
+class CommonCleanup(aetest.CommonCleanup):
+
+        @aetest.subsection
+        def disconnect(self, testbed):
+                testbed = loader.load("testbed.yaml")
+                device = testbed.devices['n9k1']
+                device.connect(alias='nc', via='netconf')
+                device.nc.disconnect()
+                if device.nc.connected == False :
+                    print("#####################################################################################")
+                    print(" ")
+                    print("Device is disconnected")
+                    print(" ")
+                    print("#####################################################################################") '''
