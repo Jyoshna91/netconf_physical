@@ -1,23 +1,83 @@
+#cat testbed.yaml
+devices:
+  n9k1:
+    type: 'router'
+    os: 'nxos'
+    connections:
+      cli:
+        protocol: ssh
+        ip: "10.133.35.148"
+        port: 22
+      netconf:
+        class: yang.connector.Netconf
+        ip: "10.133.35.148"
+        port: 22
+        username: "admin"
+        password: "tcs123"
+
+#cat network_lib.py
+from pyats.topology import loader
+
+class NetworkLibrary:
+    @staticmethod
+    def get_testbed():
+        return loader.load("testbed.yaml")
+
+    @staticmethod
+    def connect_to_device(testbed, device_name='n9k1'):
+        device = testbed.devices[device_name]
+        device.connect(alias='nc', via='netconf')
+        return device
+
+    @staticmethod
+    def vlan_configuration_request():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; vlan 100 ; name test_vlan ; interface Vlan21 ; ip address 192.168.10.1/24</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def verify_vlan_request():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show running-config</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+#cat vlan_config_job.py
+from pyats.easypy import Task
+import os
+
+def main(runtime):
+    # Define the test script file path
+    script_path = os.path.join(os.path.dirname(__file__), 'vlan_config_test.py')
+
+    # Execute the test script and wait for completion
+    task = Task(testscript=script_path)
+    task.start()
+    task.wait()
+
+#cat vlan_config_test.py
 from pyats import aetest
 from network_lib import NetworkLibrary
 import re
-
-class CommonSetup(aetest.CommonSetup):
-
-    @aetest.subsection
-    def connect_to_device(self, testbed):
-        # Load the testbed
-        self.testbed = NetworkLibrary.get_testbed()
-        # Connect to the device
-        self.device = NetworkLibrary.connect_to_device(self.testbed)
-        assert self.device.nc.connected, "Failed to connect to device via NETCONF"
 
 class VlanConfigTest(aetest.Testcase):
 
     @aetest.setup
     def setup(self):
-        # Get the device from common setup
-        self.device = self.parent.parameters['device']
+        # Load the testbed
+        self.testbed = NetworkLibrary.get_testbed()
+        # Connect to the device
+        self.device = NetworkLibrary.connect_to_device(self.testbed)
+        assert self.device.nc.connected, "Failed to connect to device via NETCONF"
 
     @aetest.test
     def configure_vlan(self):
@@ -44,7 +104,8 @@ class VlanConfigTest(aetest.Testcase):
             print(verification_reply)
 
             # Use regular expression to check if Vlan21 is present in the output
-            vlan_present = re.search(r'interface Vlan21', verification_reply)
+            vlan_present = re.search(r"([a-z]+\s\bV[a-z]+2[0-2])", verification_reply)
+            #vlan_present = re.search(r'interface Vlan21', verification_reply)
             if vlan_present:
                 print("Vlan21 is present in the configuration.")
             else:
@@ -53,15 +114,11 @@ class VlanConfigTest(aetest.Testcase):
         except Exception as e:
             self.failed(f"Failed to send verification command: {e}")
 
-class CommonCleanup(aetest.CommonCleanup):
-
-    @aetest.subsection
-    def disconnect_from_device(self):
-        # Get the device from common setup
-        device = self.parent.parameters['device']
+    @aetest.cleanup
+    def cleanup(self):
         # Disconnect from the device
-        device.nc.disconnect()
-        print("NETCONF connected after disconnect:", device.nc.connected)
+        self.device.nc.disconnect()
+        print("NETCONF connected after disconnect:", self.device.nc.connected)
 
 if __name__ == "__main__":
     aetest.main()
