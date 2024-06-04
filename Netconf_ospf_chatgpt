@@ -1,0 +1,298 @@
+####vlan_lib.py
+
+import logging
+from pyats.topology import loader
+from ncclient import manager
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+class VlanCommonFunctions():
+    @staticmethod
+    def connect_device(device_name):
+        testbed = loader.load("testbed.yaml")
+        device = testbed.devices[device_name]
+        device.connect(alias='nc', via='netconf')
+        return device
+
+    @staticmethod
+    def configure_vlan(device, vlan_id, vlan_name, ip_address, intf="Vlan21"):
+        vlan_config = f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; vlan {vlan_id} ; name {vlan_name} ; interface {intf} ; ip address {ip_address}</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+        response = device.nc.request(vlan_config)
+        logger.info(f"Configured VLAN {vlan_id} with name {vlan_name} on device {device.name}")
+        return response
+
+    @staticmethod
+    def remove_vlan(device, vlan_id):
+        vlan_remove = f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="109" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; no vlan {vlan_id}</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+        response = device.nc.request(vlan_remove)
+        logger.info(f"Removed VLAN {vlan_id} from device {device.name}")
+        return response
+
+    @staticmethod
+    def validate_vlan(device, vlan_id):
+        get_vlan = f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show running-config vlan {vlan_id}</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+        response = device.nc.request(get_vlan)
+        return f"vlan {vlan_id}" in response.xml
+
+    @staticmethod
+    def show_vlan(device):
+        get_vlan = f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="110" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show vlan</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+        response = device.nc.request(get_vlan)
+        return response.xml
+
+    @staticmethod
+    def show_vtp_status(device):
+        get_vtp = f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="111" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show vtp status</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+        response = device.nc.request(get_vtp)
+        return response.xml
+
+    @staticmethod
+    def show_vlan_summary(device):
+        get_vlan_summary = f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="112" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show vlan summary</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+###### testcase_vlan.py #######
+
+import logging
+from pyats import aetest
+from vlan_lib import VlanCommonFunctions
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+class CommonSetup(aetest.CommonSetup):
+    @aetest.subsection
+    def connect_to_devices(self, testbed):
+        global uut1, uut2, uut3
+        uut1 = VlanCommonFunctions.connect_device('dut1')
+        uut2 = VlanCommonFunctions.connect_device('dut2')
+        uut3 = VlanCommonFunctions.connect_device('dut3')
+        logger.info("Connected to devices")
+
+class VLANConfigurationTest(aetest.Testcase):
+    @aetest.setup
+    def setup(self):
+        logger.info("Setup for VLAN Configuration Test")
+
+    @aetest.test
+    def configure_vlan_id(self):
+        vlan_id = 100
+        vlan_name = "TestVLAN"
+        ip_address = "192.168.10.1/24"
+
+        response = VlanCommonFunctions.configure_vlan(uut1, vlan_id, vlan_name, ip_address)
+        assert VlanCommonFunctions.validate_vlan(uut1, vlan_id), f"VLAN {vlan_id} not found on {uut1.name}"
+        
+        # Validate VLAN configuration
+        vlan_output = VlanCommonFunctions.show_vlan(uut1)
+        assert f"vlan {vlan_id}" in vlan_output, f"VLAN {vlan_id} not found in show vlan output on {uut1.name}"
+
+    @aetest.test
+    def configure_vlan_name(self):
+        vlan_id = 200
+        vlan_name = "NewVLAN"
+        ip_address = "192.168.20.1/24"
+
+        response = VlanCommonFunctions.configure_vlan(uut1, vlan_id, vlan_name, ip_address)
+        assert VlanCommonFunctions.validate_vlan(uut1, vlan_id), f"VLAN {vlan_id} not found on {uut1.name}"
+        
+        # Validate VLAN configuration
+        vlan_output = VlanCommonFunctions.show_vlan(uut1)
+        assert f"vlan {vlan_id}" in vlan_output, f"VLAN {vlan_id} not found in show vlan output on {uut1.name}"
+
+    @aetest.test
+    def configure_vlan_with_interface(self):
+        vlan_id = 300
+        vlan_name = "InterfaceVLAN"
+        ip_address = "192.168.30.1/24"
+        intf = "Vlan31"
+
+        response = VlanCommonFunctions.configure_vlan(uut1, vlan_id, vlan_name, ip_address, intf)
+        assert VlanCommonFunctions.validate_vlan(uut1, vlan_id), f"VLAN {vlan_id} not found on {uut1.name}"
+        
+        # Validate VLAN configuration
+        vlan_output = VlanCommonFunctions.show_vlan(uut1)
+        assert f"vlan {vlan_id}" in vlan_output, f"VLAN {vlan_id} not found in show vlan output on {uut1.name}"
+
+    @aetest.test
+    def verify_vtp_status(self):
+        vtp_status = VlanCommonFunctions.show_vtp_status(uut1)
+        assert "VTP Version" in vtp_status, f"VTP status not found on {uut1.name}"
+        
+    @aetest.test
+    def verify_vlan_summary(self):
+        vlan_summary = VlanCommonFunctions.show_vlan_summary(uut1)
+        assert "VLAN Summary" in vlan_summary, f"VLAN summary not found on {uut1.name}"
+        
+    @aetest.test
+    def verify_system_vlan(self):
+        system_vlan = VlanCommonFunctions.show_system_vlan(uut1)
+        assert "System VLAN" in system_vlan, f"System VLAN not found on {uut1.name}"
+        
+    @aetest.test
+    def verify_vlan_counters_reserved(self):
+        vlan_counters_reserved = VlanCommonFunctions.show_vlan_counters_reserved(uut1)
+        assert "Reserved VLANs" in vlan_counters_reserved, f"Reserved VLANs not found on {uut1.name}"
+
+    @aetest.cleanup
+    def cleanup(self):
+        vlan_ids = [100, 200, 300]
+        
+        for vlan_id in vlan_ids:
+            VlanCommonFunctions.remove_vlan(uut1, vlan_id)
+        logger.info("Cleanup after VLAN Configuration Test")
+
+class CommonCleanup(aetest.CommonCleanup):
+    @aetest.subsection
+    def disconnect_from_devices(self):
+        uut1.disconnect()
+        uut2.disconnect()
+        uut3.disconnect()
+        logger.info("Disconnected from devices")
+
+if __name__ == '__main__':
+    aetest.main()
+
+##########testbed.yaml###########
+
+devices:
+  n9k1:
+    alias: 'dut1'
+    connections:
+      cli:
+        ip: 10.133.35.148
+        port: 22
+        protocol: ssh
+      netconf:
+        class: yang.connector.Netconf
+        ip: "10.133.35.148"
+        port: 22
+        username: "admin"
+        password: "tcs123"
+
+    credentials:
+      default:
+        password: tcs123
+        username: admin
+      enable:
+        password: tcs123
+    os: nxos
+    type: nxos
+
+  n9k4:
+    alias: 'dut2'
+    connections:
+      cli:
+        ip: 10.133.35.143
+        port: 22
+        protocol: ssh
+      netconf:
+        class: yang.connector.Netconf
+        ip: "10.133.35.143"
+        port: 22
+        username: "admin"
+        password: "tcs123"
+
+    credentials:
+      default:
+        password: tcs123
+        username: admin
+      enable:
+        password: tcs123
+    os: nxos
+    type: nxos
+
+
+  n9k3:
+    alias: 'dut3'
+    connections:
+      cli:
+        ip: 10.133.35.152
+        port: 22
+        protocol: ssh
+      netconf:
+        class: yang.connector.Netconf
+        ip: "10.133.35.142"
+        port: 22
+        username: "admin"
+        password: "tcs123"
+
+    credentials:
+      default:
+        password: tcs123
+        username: admin
+      enable:
+        password: tcs123
+    os: nxos
+    type: nxos
+
+topology:
+  n9k1:
+    interfaces:
+      Ethernet1/5:
+        link: uut1_uut3_1
+        type: ethernet
+  n9k4:
+    interfaces:
+      Ethernet1/9:
+        link: uut2_uut3_1
+        type: ethernet
+  n9k3:
+    interfaces:
+      Ethernet1/5:
+        link: uut3_uut1_1
+        type: ethernet
+      Ethernet1/9:
+        link: uut3_uut2_1
+        type: ethernet
+
+########vlan_job.py###########
+
+from pyats.easypy import run
+import os
+
+def main():
+    path = os.path.dirname(__file__)
+    run(testscript=os.path.join(path, 'testcase_vlan.py'), datafile='testbed.yaml')
