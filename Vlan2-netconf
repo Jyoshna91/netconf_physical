@@ -1,0 +1,180 @@
+### vlan_config_job.py #####
+from pyats.easypy import Task
+import os
+
+def main(runtime):
+    # Define the test script file path
+    script_path = os.path.join(os.path.dirname(__file__), 'vlan_config_test.py')
+
+    # Execute the test script and wait for completion
+    task = Task(testscript=script_path)
+    task.start()
+    task.wait()
+
+##### vlan_config_test.py #####
+
+from pyats import aetest
+from network_lib import NetworkLibrary
+import re
+
+class VlanConfigTest(aetest.Testcase):
+
+    @aetest.setup
+    def setup(self):
+        # Load the testbed
+        self.testbed = NetworkLibrary.get_testbed()
+        # Connect to the device
+        self.device = NetworkLibrary.connect_to_device(self.testbed)
+        assert self.device.nc.connected, "Failed to connect to device via NETCONF"
+
+    @aetest.test
+    def configure_vlan(self):
+        # Get the VLAN configuration request
+        command_request = NetworkLibrary.vlan_configuration_request()
+
+        # Send the configuration command
+        try:
+            reply_command = self.device.nc.request(command_request)
+            print("Configuration Reply:")
+            print(reply_command)
+        except Exception as e:
+            self.failed(f"Failed to send configuration command: {e}")
+
+    @aetest.test
+    def verify_vlan(self):
+        # Get the verification request
+        verification_request = NetworkLibrary.verify_vlan_request()
+
+        # Send the verification command
+        try:
+            verification_reply = self.device.nc.request(verification_request)
+            print("Verification Reply:")
+            print(verification_reply)
+
+            # Use regular expression to check if Vlan21 is present in the output
+            vlan_present = re.search(r"vlan 100", verification_reply.xml)
+            if vlan_present:
+                print("Vlan100 is present in the configuration.")
+            else:
+                self.failed("Vlan100 is not present in the configuration.")
+
+        except Exception as e:
+            self.failed(f"Failed to send verification command: {e}")
+
+    @aetest.test
+    def show_vlan_summary(self):
+        # Get the VLAN summary request
+        vlan_summary_request = NetworkLibrary.show_vlan_summary_request()
+
+        # Send the VLAN summary command
+        try:
+            summary_reply = self.device.nc.request(vlan_summary_request)
+            print("VLAN Summary Reply:")
+            print(summary_reply)
+
+            assert "VLAN Summary" in summary_reply.xml, "VLAN Summary information is not found."
+
+        except Exception as e:
+            self.failed(f"Failed to send VLAN summary command: {e}")
+
+    @aetest.test
+    def show_vtp_status(self):
+        # Get the VTP status request
+        vtp_status_request = NetworkLibrary.show_vtp_status_request()
+
+        # Send the VTP status command
+        try:
+            vtp_status_reply = self.device.nc.request(vtp_status_request)
+            print("VTP Status Reply:")
+            print(vtp_status_reply)
+
+            assert "VTP Version" in vtp_status_reply.xml, "VTP Status information is not found."
+
+        except Exception as e:
+            self.failed(f"Failed to send VTP status command: {e}")
+
+    @aetest.cleanup
+    def cleanup(self):
+        # Disconnect from the device
+        self.device.nc.disconnect()
+        print("NETCONF connected after disconnect:", self.device.nc.connected)
+
+if __name__ == "__main__":
+    aetest.main()
+
+###### network_lib.py ########
+
+from pyats.topology import loader
+
+class NetworkLibrary:
+    @staticmethod
+    def get_testbed():
+        return loader.load("testbed.yaml")
+
+    @staticmethod
+    def connect_to_device(testbed, device_name='n9k1'):
+        device = testbed.devices[device_name]
+        device.connect(alias='nc', via='netconf')
+        return device
+
+    @staticmethod
+    def vlan_configuration_request():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; vlan 100 ; name test_vlan ; interface Vlan21 ; ip address 192.168.10.1/24</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def verify_vlan_request():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show running-config vlan 100</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def show_vlan_summary_request():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="109" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show vlan summary</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def show_vtp_status_request():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="110" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show vtp status</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+###### testbed.yaml ######
+
+devices:
+  n9k1:
+    type: 'router'
+    os: 'nxos'
+    connections:
+      cli:
+        protocol: ssh
+        ip: "10.133.35.148"
+        port: 22
+      netconf:
+        class: yang.connector.Netconf
+        ip: "10.133.35.148"
+        port: 22
+        username: "admin"
+        password: "tcs123"
