@@ -278,3 +278,47 @@ class VlanConfigTest(aetest.Testcase):
 
 if __name__ == "__main__":
     aetest.main()
+
+
+#####################regex:-
+import re
+verification_reply=""" <?xml version="1.0" encoding="ISO-8859-1"?>
+<nf:rpc-reply xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" xmlns:mod="http://www.cisco.com/nxos:1.0:vlan_mgr_cli" message-id="113">
+  <nf:data>
+    <mod:show>
+      <mod:vlan>
+        <mod:name>
+          <mod:vname>
+            <mod:__XML__PARAM_value>default_vlan</mod:__XML__PARAM_value>
+            <mod:__XML__OPT_Cmd_show_vlan_name___readonly__>
+              <mod:__readonly__>
+                <mod:TABLE_vlanbriefname>
+                  <mod:ROW_vlanbriefname>
+                    <mod:vlanshowbr-vlanid>100</mod:vlanshowbr-vlanid>
+                    <mod:vlanshowbr-vlanid-utf>100</mod:vlanshowbr-vlanid-utf>
+                    <mod:vlanshowbr-vlanname>default_vlan</mod:vlanshowbr-vlanname>
+                    <mod:vlanshowbr-vlanstate>active</mod:vlanshowbr-vlanstate>
+                    <mod:vlanshowbr-shutstate>noshutdown</mod:vlanshowbr-shutstate>
+                  </mod:ROW_vlanbriefname>
+                </mod:TABLE_vlanbriefname>
+                <mod:TABLE_mtuinfoname>
+                  <mod:ROW_mtuinfoname>
+                    <mod:vlanshowinfo-vlanid>100</mod:vlanshowinfo-vlanid>
+                    <mod:vlanshowinfo-media-type>enet</mod:vlanshowinfo-media-type>
+                    <mod:vlanshowinfo-vlanmode>ce-vlan</mod:vlanshowinfo-vlanmode>
+                  </mod:ROW_mtuinfoname>
+                </mod:TABLE_mtuinfoname>
+                <mod:vlanshowrspan-vlantype>notrspan</mod:vlanshowrspan-vlantype>
+              </mod:__readonly__>
+            </mod:__XML__OPT_Cmd_show_vlan_name___readonly__>
+          </mod:vname>
+        </mod:name>
+      </mod:vlan>
+    </mod:show>
+  </nf:data>
+</nf:rpc-reply>"""
+
+#vlan_present = re.findall(r'[a-z]{7}+_[a-z]{4}', verification_reply)
+#vlan_present = re.findall(r"\bd[a-z]+\_+\bv[a-z]", verification_reply)
+vlan_present = re.findall(r"\bd[a-z]+\W\bv[a-z]+", verification_reply)  #only default_vlan should be present in vlan_present
+print(vlan_present)
