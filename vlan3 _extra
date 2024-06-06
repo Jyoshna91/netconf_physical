@@ -46,8 +46,10 @@ class VlanConfigTest(aetest.Testcase):
             print(verification_reply)
 
             # Use regular expression to check if VLAN is present in the output
-            vlan_present = re.search(r"1[0-9][0-9]", verification_reply)
-            # vlan_present = re.search(r"100", verification_reply)
+            #<mod:__XML__PARAM_value>100</mod:__XML__PARAM_value>
+
+            vlan_present = re.search(r'<mod:__XML__PARAM_value>1[0-9][0-9]', verification_reply)
+
             if vlan_present:
                 print("100 is present in the configuration.")
             else:
@@ -138,7 +140,7 @@ class VlanConfigTest(aetest.Testcase):
 
             vlan_present1 = re.search(r'<mod:vlanshowbr-vlanid>1[0-9][0-9]', verification_reply)
             vlan_present2 = re.search(r'<mod:vlanshowbr-vlanstate>[a-z]{6}', verification_reply)
-            if (vlan_present1 and vlan_present1):
+            if (vlan_present1 and vlan_present2):
                 print("VTP status is correctly configured.")
             else:
                 self.failed("VTP status is not correctly configured.")
@@ -231,12 +233,12 @@ class NetworkLibrary:
         """
 
     @staticmethod
-    def show_vlan():
-        return """
+    def show_vlan(vlan_id=VLAN_ID):
+        return f"""
         <?xml version="1.0" encoding="UTF-8"?>
         <nf:rpc message-id="106" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
             <nxos:exec-command>
-                <nxos:cmd>show vtp status</nxos:cmd>
+                <nxos:cmd>show vlan id {vlan_id}</nxos:cmd>
             </nxos:exec-command>
         </nf:rpc>
         """
