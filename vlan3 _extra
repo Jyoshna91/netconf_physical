@@ -322,3 +322,6 @@ verification_reply=""" <?xml version="1.0" encoding="ISO-8859-1"?>
 #vlan_present = re.findall(r"\bd[a-z]+\_+\bv[a-z]", verification_reply)
 vlan_present = re.findall(r"\bd[a-z]+\W\bv[a-z]+", verification_reply)  #only default_vlan should be present in vlan_present
 print(vlan_present)
+
+
+vlan_present = re.findall(r'<[a-z]+:[a-z-]+>default_vlan<\/[a-z]+:[a-z-]+>', verification_reply)
