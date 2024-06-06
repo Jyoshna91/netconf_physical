@@ -1,3 +1,192 @@
+### vlan_config_job.py #####
+from pyats.easypy import Task
+import os
+
+def main(runtime):
+    # Define the test script file path
+    script_path = os.path.join(os.path.dirname(__file__), 'vlan_config_test.py')
+
+    # Execute the test script and wait for completion
+    task = Task(testscript=script_path)
+    task.start()
+    task.wait()
+
+##### vlan_config_test.py #####
+
+from pyats import aetest
+from network_lib import NetworkLibrary
+import re
+
+class VlanConfigTest(aetest.Testcase):
+
+    @aetest.setup
+    def setup(self):
+        # Load the testbed
+        self.testbed = NetworkLibrary.get_testbed()
+        # Connect to the device
+        self.device = NetworkLibrary.connect_to_device(self.testbed)
+        assert self.device.nc.connected, "Failed to connect to device via NETCONF"
+
+    @aetest.test
+    def configure_vlan_id(self):
+        # Configure VLAN
+        command_request = NetworkLibrary.vlan_configuration_request()
+        try:
+            reply_command = self.device.nc.request(command_request)
+            print("Configuration Reply:")
+            print(reply_command)
+        except Exception as e:
+            self.failed(f"Failed to send configuration command: {e}")
+
+        # Verify VLAN configuration
+        verification_request = NetworkLibrary.show_vlan()
+        try:
+            verification_reply = self.device.nc.request(verification_request)
+            print("Verification Reply:")
+            print(verification_reply)
+
+            # Use regular expression to check if VLAN is present in the output
+            vlan_present = re.search(r"1[0-9][0-9]", verification_reply)
+            # vlan_present = re.search(r"100", verification_reply)
+            if vlan_present:
+                print("100 is present in the configuration.")
+            else:
+                self.failed("100 is not present in the configuration.")
+        except Exception as e:
+            self.failed(f"Failed to send verification command: {e}")
+
+    @aetest.test
+    def configure_vlan_name(self):
+        # Configure VLAN
+        command_request = NetworkLibrary.vlan_configuration_request()
+        try:
+            reply_command = self.device.nc.request(command_request)
+            print("Configuration Reply:")
+            print(reply_command)
+        except Exception as e:
+            self.failed(f"Failed to send configuration command: {e}")
+
+        # Verify VLAN configuration
+        verification_request = NetworkLibrary.show_vlan_name()
+        try:
+            verification_reply = self.device.nc.request(verification_request)
+            print("Verification Reply:")
+            print(verification_reply)
+
+            # Use regular expression to check if VLAN name is present in the output
+            vlan_present = re.search(r'<mod:__XML__PARAM_value>[a-z]+_[a-z]{4}', verification_reply)
+
+            #vlan_present = re.search(r"\bdefault_vlan\b", verification_reply)
+            if vlan_present:
+                print("VLAN name 'default_vlan' is present in the configuration.")
+            else:
+                self.failed("VLAN name 'default_vlan' is not present in the configuration.")
+        except Exception as e:
+            self.failed(f"Failed to send verification command: {e}")
+
+    @aetest.test
+    def configure_vlan_with_interface(self):
+        # Configure VLAN with Interface
+        command_request = NetworkLibrary.vlan_configuration_request_with_interface()
+        try:
+            reply_command = self.device.nc.request(command_request)
+            print("Configuration Reply:")
+            print(reply_command)
+        except Exception as e:
+            self.failed(f"Failed to send configuration command: {e}")
+
+        # Verify VLAN configuration
+        verification_request = NetworkLibrary.show_running_config_interface()
+        try:
+            verification_reply = self.device.nc.request(verification_request)
+            print("Verification Reply:")
+            print(verification_reply)
+
+            # Use regular expression to check if VLAN interface is present in the output
+            #vlan_present = re.search(r"\binterface Vlan31\b", verification_reply)
+            vlan_present = re.search(r"([a-z]+\s\bV[a-z]+3[0-2])", verification_reply)
+
+            if vlan_present:
+                print("Interface Vlan31 is present in the configuration.")
+            else:
+                self.failed("Interface Vlan31 is not present in the configuration.")
+        except Exception as e:
+            self.failed(f"Failed to send verification command: {e}")
+
+    @aetest.test
+    def configure_vtp_status(self):
+        # Configure VTP
+        command_request = NetworkLibrary.configure_vtp_request()
+        try:
+            reply_command = self.device.nc.request(command_request)
+            print("Configuration Reply:")
+            print(reply_command)
+        except Exception as e:
+            self.failed(f"Failed to send VTP configuration command: {e}")
+
+        # Verify VTP Status
+        verification_request = NetworkLibrary.show_vtp_status_request()
+        try:
+            verification_reply = self.device.nc.request(verification_request)
+            print("VTP Status Verification Reply:")
+            print(verification_reply)
+
+            # Use regular expression to check if VTP mode is present in the output
+            #<mod:vlanshowbr-vlanid-utf>100</mod:vlanshowbr-vlanid-utf>
+            #<mod:vlanshowbr-vlanname>default_vlan</mod:vlanshowbr-vlanname>
+            #<mod:vlanshowbr-vlanstate>active</mod:vlanshowbr-vlanstate>
+
+            vlan_present1 = re.search(r'<mod:vlanshowbr-vlanid>1[0-9][0-9]', verification_reply)
+            vlan_present2 = re.search(r'<mod:vlanshowbr-vlanstate>[a-z]{6}', verification_reply)
+            if (vlan_present1 and vlan_present1):
+                print("VTP status is correctly configured.")
+            else:
+                self.failed("VTP status is not correctly configured.")
+        except Exception as e:
+            self.failed(f"Failed to send VTP status verification command: {e}")
+
+    @aetest.test
+    def configure_system_vlan_reserve(self):
+        # Configure System VLAN
+        command_request = NetworkLibrary.system_vlan_reserve()
+        try:
+            reply_command = self.device.nc.request(command_request)
+            print("Configuration Reply:")
+            print(reply_command)
+        except Exception as e:
+            self.failed(f"Failed to send System VLAN configuration command: {e}")
+
+        # Verify System VLAN configuration
+        verification_request = NetworkLibrary.verify_system_vlan_reserve()
+        try:
+            verification_reply = self.device.nc.request(verification_request)
+            print("System VLAN Verification Reply:")
+            print(verification_reply)
+
+            # Use regular expression to check if System VLAN is present in the output
+            #vlan_present = re.search(r"<mod:future_reserved_vlan_start>2000", verification_reply)
+
+            vlan_present = re.search(r"<mod:future_reserved_vlan_start>2[0-9][0-9][0-9]", verification_reply)
+
+            if vlan_present:
+                print("System Vlan 2000 is present in the configuration.")
+            else:
+                self.failed("System Vlan 2000 is not present in the configuration.")
+        except Exception as e:
+            self.failed(f"Failed to send System VLAN verification command: {e}")
+
+    @aetest.cleanup
+    def cleanup(self):
+        # Disconnect from the device
+        self.device.nc.disconnect()
+        print("NETCONF connected after disconnect:", self.device.nc.connected)
+
+if __name__ == "__main__":
+    aetest.main()
+
+
+###### network_lib.py ########
+
 from pyats.topology import loader
 
 class NetworkLibrary:
@@ -47,7 +236,7 @@ class NetworkLibrary:
         <?xml version="1.0" encoding="UTF-8"?>
         <nf:rpc message-id="106" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
             <nxos:exec-command>
-                <nxos:cmd>show vlan</nxos:cmd>
+                <nxos:cmd>show vtp status</nxos:cmd>
             </nxos:exec-command>
         </nf:rpc>
         """
@@ -91,7 +280,7 @@ class NetworkLibrary:
         <?xml version="1.0" encoding="UTF-8"?>
         <nf:rpc message-id="112" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
             <nxos:exec-command>
-                <nxos:cmd>show vtp status</nxos:cmd>
+                <nxos:cmd>show vlan</nxos:cmd>
             </nxos:exec-command>
         </nf:rpc>
         """
@@ -118,210 +307,22 @@ class NetworkLibrary:
         </nf:rpc>
         """
 
+###### testbed.yaml ######
+
+devices:
+  n9k1:
+    type: 'router'
+    os: 'nxos'
+    connections:
+      cli:
+        protocol: ssh
+        ip: "10.133.35.148"
+        port: 22
+      netconf:
+        class: yang.connector.Netconf
+        ip: "10.133.35.148"
+        port: 22
+        username: "admin"
+        password: "tcs123"
 
 
-#############testcase@@@@@@@@@@@@
-from pyats import aetest
-from network_lib import NetworkLibrary
-import re
-
-class VlanConfigTest(aetest.Testcase):
-
-    @aetest.setup
-    def setup(self):
-        # Load the testbed
-        self.testbed = NetworkLibrary.get_testbed()
-        # Connect to the device
-        self.device = NetworkLibrary.connect_to_device(self.testbed)
-        assert self.device.nc.connected, "Failed to connect to device via NETCONF"
-
-    @aetest.test
-    def configure_vlan_id(self):
-        # Configure VLAN
-        command_request = NetworkLibrary.vlan_configuration_request()
-        try:
-            reply_command = self.device.nc.request(command_request)
-            print("Configuration Reply:")
-            print(reply_command)
-        except Exception as e:
-            self.failed(f"Failed to send configuration command: {e}")
-
-        # Verify VLAN configuration
-        verification_request = NetworkLibrary.show_vlan()
-        try:
-            verification_reply = self.device.nc.request(verification_request)
-            print("Verification Reply:")
-            print(verification_reply)
-
-            # Use regular expression to check if VLAN is present in the output
-            vlan_present = re.search(r"\b100\b", verification_reply)
-            if vlan_present:
-                print("100 is present in the configuration.")
-            else:
-                self.failed("100 is not present in the configuration.")
-        except Exception as e:
-            self.failed(f"Failed to send verification command: {e}")
-
-    @aetest.test
-    def configure_vlan_name(self):
-        # Configure VLAN
-        command_request = NetworkLibrary.vlan_configuration_request()
-        try:
-            reply_command = self.device.nc.request(command_request)
-            print("Configuration Reply:")
-            print(reply_command)
-        except Exception as e:
-            self.failed(f"Failed to send configuration command: {e}")
-
-        # Verify VLAN configuration
-        verification_request = NetworkLibrary.show_vlan_name()
-        try:
-            verification_reply = self.device.nc.request(verification_request)
-            print("Verification Reply:")
-            print(verification_reply)
-
-            # Use regular expression to check if VLAN name is present in the output
-            vlan_present = re.search(r"\bdefault_vlan\b", verification_reply)
-            if vlan_present:
-                print("VLAN name 'default_vlan' is present in the configuration.")
-            else:
-                self.failed("VLAN name 'default_vlan' is not present in the configuration.")
-        except Exception as e:
-            self.failed(f"Failed to send verification command: {e}")
-
-    @aetest.test
-    def configure_vlan_with_interface(self):
-        # Configure VLAN with Interface
-        command_request = NetworkLibrary.vlan_configuration_request_with_interface()
-        try:
-            reply_command = self.device.nc.request(command_request)
-            print("Configuration Reply:")
-            print(reply_command)
-        except Exception as e:
-            self.failed(f"Failed to send configuration command: {e}")
-
-        # Verify VLAN configuration
-        verification_request = NetworkLibrary.show_running_config_interface()
-        try:
-            verification_reply = self.device.nc.request(verification_request)
-            print("Verification Reply:")
-            print(verification_reply)
-
-            # Use regular expression to check if VLAN interface is present in the output
-            vlan_present = re.search(r"\binterface Vlan31\b", verification_reply)
-            if vlan_present:
-                print("Interface Vlan31 is present in the configuration.")
-            else:
-                self.failed("Interface Vlan31 is not present in the configuration.")
-        except Exception as e:
-            self.failed(f"Failed to send verification command: {e}")
-
-    @aetest.test
-    def configure_vtp_status(self):
-        # Configure VTP
-        command_request = NetworkLibrary.configure_vtp_request()
-        try:
-            reply_command = self.device.nc.request(command_request)
-            print("Configuration Reply:")
-            print(reply_command)
-        except Exception as e:
-            self.failed(f"Failed to send VTP configuration command: {e}")
-
-        # Verify VTP Status
-        verification_request = NetworkLibrary.show_vtp_status_request()
-        try:
-            verification_reply = self.device.nc.request(verification_request)
-            print("VTP Status Verification Reply:")
-            print(verification_reply)
-
-            # Use regular expression to check if VTP mode is present in the output
-            vtp_present = re.search(r"\bmax_vlan_supported_local\b", verification_reply)
-            if vtp_present:
-                print("VTP status is correctly configured.")
-            else:
-                self.failed("VTP status is not correctly configured.")
-        except Exception as e:
-            self.failed(f"Failed to send VTP status verification command: {e}")
-
-    @aetest.test
-    def configure_system_vlan_reserve(self):
-        # Configure System VLAN
-        command_request = NetworkLibrary.system_vlan_reserve()
-        try:
-            reply_command = self.device.nc.request(command_request)
-            print("Configuration Reply:")
-            print(reply_command)
-        except Exception as e:
-            self.failed(f"Failed to send System VLAN configuration command: {e}")
-
-        # Verify System VLAN configuration
-        verification_request = NetworkLibrary.verify_system_vlan_reserve()
-        try:
-            verification_reply = self.device.nc.request(verification_request)
-            print("System VLAN Verification Reply:")
-            print(verification_reply)
-
-            # Use regular expression to check if System VLAN is present in the output
-            vlan_present = re.search(r"\bcurrent_reserved_vlan_start\b", verification_reply)
-            if vlan_present:
-                print("System Vlan 2000 is present in the configuration.")
-            else:
-                self.failed("System Vlan 2000 is not present in the configuration.")
-        except Exception as e:
-            self.failed(f"Failed to send System VLAN verification command: {e}")
-
-    @aetest.cleanup
-    def cleanup(self):
-        # Disconnect from the device
-        self.device.nc.disconnect()
-        print("NETCONF connected after disconnect:", self.device.nc.connected)
-
-if __name__ == "__main__":
-    aetest.main()
-
-
-#####################regex:-
-import re
-verification_reply=""" <?xml version="1.0" encoding="ISO-8859-1"?>
-<nf:rpc-reply xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0" xmlns:mod="http://www.cisco.com/nxos:1.0:vlan_mgr_cli" message-id="113">
-  <nf:data>
-    <mod:show>
-      <mod:vlan>
-        <mod:name>
-          <mod:vname>
-            <mod:__XML__PARAM_value>default_vlan</mod:__XML__PARAM_value>
-            <mod:__XML__OPT_Cmd_show_vlan_name___readonly__>
-              <mod:__readonly__>
-                <mod:TABLE_vlanbriefname>
-                  <mod:ROW_vlanbriefname>
-                    <mod:vlanshowbr-vlanid>100</mod:vlanshowbr-vlanid>
-                    <mod:vlanshowbr-vlanid-utf>100</mod:vlanshowbr-vlanid-utf>
-                    <mod:vlanshowbr-vlanname>default_vlan</mod:vlanshowbr-vlanname>
-                    <mod:vlanshowbr-vlanstate>active</mod:vlanshowbr-vlanstate>
-                    <mod:vlanshowbr-shutstate>noshutdown</mod:vlanshowbr-shutstate>
-                  </mod:ROW_vlanbriefname>
-                </mod:TABLE_vlanbriefname>
-                <mod:TABLE_mtuinfoname>
-                  <mod:ROW_mtuinfoname>
-                    <mod:vlanshowinfo-vlanid>100</mod:vlanshowinfo-vlanid>
-                    <mod:vlanshowinfo-media-type>enet</mod:vlanshowinfo-media-type>
-                    <mod:vlanshowinfo-vlanmode>ce-vlan</mod:vlanshowinfo-vlanmode>
-                  </mod:ROW_mtuinfoname>
-                </mod:TABLE_mtuinfoname>
-                <mod:vlanshowrspan-vlantype>notrspan</mod:vlanshowrspan-vlantype>
-              </mod:__readonly__>
-            </mod:__XML__OPT_Cmd_show_vlan_name___readonly__>
-          </mod:vname>
-        </mod:name>
-      </mod:vlan>
-    </mod:show>
-  </nf:data>
-</nf:rpc-reply>"""
-
-#vlan_present = re.findall(r'[a-z]{7}+_[a-z]{4}', verification_reply)
-#vlan_present = re.findall(r"\bd[a-z]+\_+\bv[a-z]", verification_reply)
-vlan_present = re.findall(r"\bd[a-z]+\W\bv[a-z]+", verification_reply)  #only default_vlan should be present in vlan_present
-print(vlan_present)
-
-
-vlan_present = re.findall(r'<[a-z]+:[a-z-]+>default_vlan<\/[a-z]+:[a-z-]+>', verification_reply)
