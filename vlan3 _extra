@@ -158,5 +158,121 @@ if __name__ == "__main__":
     aetest.main()
 
 #lib file:-
+from pyats.topology import loader
+
+class NetworkLibrary:
+    VLAN_ID = 100
+    VLAN_NAME = "default_vlan"
+    VLAN_INT = "Vlan31"
+    VLAN_IP = "192.168.1.1/24"
+
+    @staticmethod
+    def get_testbed():
+        return loader.load("testbed.yaml")
+
+    @staticmethod
+    def connect_to_device(testbed, device_name='n9k1'):
+        device = testbed.devices[device_name]
+        device.connect(alias='nc', via='netconf')
+        return device
+
+    @staticmethod
+    def vlan_configuration_request(vlan_id=VLAN_ID, vlan_name=VLAN_NAME, ip_address=VLAN_IP, intf="Vlan21"):
+        return f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="107" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; vlan {vlan_id} ; name {vlan_name} ; interface {intf} ; ip address {ip_address}</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def vlan_configuration_request_with_interface(vlan_id=VLAN_ID, vlan_name=VLAN_NAME, ip_address=VLAN_IP, intf=VLAN_INT):
+        return f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="108" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; vlan {vlan_id} ; name {vlan_name} ; interface {intf} ; ip address {ip_address}</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def show_vlan():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="106" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show vlan</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def show_vlan_name(vlan_name=VLAN_NAME):
+        return f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="113" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show vlan name {vlan_name}</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def show_running_config_interface(intf=VLAN_INT):
+        return f"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="110" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show running-config interface {intf}</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def configure_vtp_request():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="111" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; vtp mode transparent ; end</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def show_vtp_status_request():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="112" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show vtp status</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def system_vlan_reserve():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="109" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>configure terminal ; system vlan 2000 ; end</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
+
+    @staticmethod
+    def verify_system_vlan_reserve():
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nf:rpc message-id="114" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
+            <nxos:exec-command>
+                <nxos:cmd>show system vlan</nxos:cmd>
+            </nxos:exec-command>
+        </nf:rpc>
+        """
 
 
