@@ -1,0 +1,77 @@
+######################acl testcase
+#@aetest.skip("testing fourth scenario")
+class acl_testcase_deny(aetest.Testcase):
+
+    @aetest.setup
+    def configure_acl_on_device(self,testbed):
+
+        logger.info("Configure acl on device1:{}".format(uut1.name))
+        acl_common_functions.configure_acl(uut1,acl_name,rule2)
+
+        logger.info("Configure acl in interface")
+        acl_common_functions.configure_acl_interface(uut1,device1['intf'],acl_name,bound)
+
+    @aetest.test
+    def check_ping_after_deny_acl(self,testbed):
+
+        logger.info("Check acl configured or not ")
+        acl_config = uut1.execute("show access-list {}".format(acl_name))
+        logger.info(acl_config)
+        if acl_name in acl_config:
+            logger.info("ACL configured on device")
+        else:
+            self.errored('Acl is not configured on device')
+
+        logger.info("Ping the ip configured on device2: {}".format(uut3.name))
+        for i in range(3):
+            result = uut1.execute("ping {}".format(device3['ip_address']))
+        res_dict = acl_common_functions.validate_ping(result)
+        logger.info("++++++++++++++++++++++++++++")
+        logger.info(res_dict)
+        logger.info("++++++++++++++++++++++++++++")
+
+        if ((res_dict['sent_pkt'] != res_dict['receive_pkt']) and (res_dict['pkt_loss'] == '100.00%')):
+            logger.info("Sent : {} packets and received: {} packets and packet loss: {}".format(res_dict['sent_pkt'],res_dict['receive_pkt'],res_dict['pkt_loss']))
+            self.passed("Success: After applied deny rule for acl ping got failed")
+        else:
+            logger.info("Sent : {} packets and received: {} packets and packet loss: {}".format(res_dict['sent_pkt'],res_dict['receive_pkt']
+,res_dict['pkt_loss']))
+            self.failed("Failed: After applied deny rule for acl ping got successful")
+
+    @aetest.cleanup
+    def unconfigure_acl_on_device(self,testbed):
+        logger.info("Unconfigure acl in interface")
+        acl_common_functions.unconfigure_acl_interface(uut1,device1['intf'],acl_name,bound)
+
+        logger.info("Unconfigure acl on device3:{}".format(uut1.name))
+        acl_common_functions.unconfigure_acl(uut1,acl_name)
+
+
+#################error:
+--- 192.168.11.2 ping statistics ---
+5 packets transmitted, 5 packets received, 0.00% packet loss
+round-trip min/avg/max = 0.564/0.648/0.898 ms
+n9k1#
+2024-06-10T12:56:15: %SCRIPT-INFO: ++++++++++++++++++++++++++++
+2024-06-10T12:56:15: %SCRIPT-INFO: {'sent_pkt': '5', 'receive_pkt': '5', 'pkt_loss': '0.00%'}
+2024-06-10T12:56:15: %SCRIPT-INFO: ++++++++++++++++++++++++++++
+2024-06-10T12:56:15: %SCRIPT-INFO: Sent : 5 packets and received: 5 packets and packet loss: 0.00%
+2024-06-10T12:56:15: %AETEST-ERROR: Failed reason: Failed: After applied deny rule for acl ping got successful
+> /home/tcs/POC2/PYATS/acl/src/pyats/aetest/base.py(545)pyats.aetest.base.TestItem.failed()
+> /home/tcs/POC2/PYATS/acl/acl_testcases.py(174)check_ping_after_deny_acl()
+-> self.failed("Failed: After applied deny rule for acl ping got successful")
+(Pdb) c
+2024-06-10T12:57:09: %AETEST-INFO: The result of section check_ping_after_deny_acl is => FAILED
+2024-06-10T12:57:09: %AETEST-INFO: +------------------------------------------------------------------------------+
+2024-06-10T12:57:09: %AETEST-INFO: |                  Starting section unconfigure_acl_on_device                  |
+2024-06-10T12:57:09: %AETEST-INFO: +------------------------------------------------------------------------------+
+2024-06-10T12:57:09: %SCRIPT-INFO: Unconfigure acl in interface
+
+2024-06-10 12:57:09,651: %UNICON-INFO: +++ n9k1(dut1) with via 'cli': configure +++
+config term
+Enter configuration commands, one per line. End with CNTL/Z.
+n9k1(config)# int ethernet1/5
+n9k1(config-if)#  no ip access-group acl123 in
+n9k1(config-if)# end
+n9k1#
+2024-06-10T12:57:10: %SCRIPT-INFO: Unconfigure acl on device3:n9k1
