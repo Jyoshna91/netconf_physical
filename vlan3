@@ -8,7 +8,7 @@ class NetworkLibrary:
     VLAN_IP = "192.168.1.1/24"
     start_vlan1 = 2000
     state11 = "active"
-    state22 = "suspend"
+    #state22 = "suspend"
 
     @staticmethod
     def get_testbed():
@@ -147,12 +147,12 @@ class NetworkLibrary:
         </nf:rpc>
         """
     @staticmethod
-    def unconfigurevlanstatus(vlan_id=VLAN_ID, vlan_name=VLAN_NAME, state2=state22):
+    def unconfigurevlanstatus(vlan_id=VLAN_ID, vlan_name=VLAN_NAME):
         return f"""
         <?xml version="1.0" encoding="UTF-8"?>
         <nf:rpc message-id="116" xmlns:nf="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nxos="http://www.cisco.com/nxos:1.0">
             <nxos:exec-command>
-                <nxos:cmd>configure terminal ; vlan {vlan_id} ; state {state2}</nxos:cmd>
+                <nxos:cmd>configure terminal ; no vlan {vlan_id}</nxos:cmd>
             </nxos:exec-command>
         </nf:rpc>
         """
